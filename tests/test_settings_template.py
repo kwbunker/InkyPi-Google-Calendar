@@ -54,6 +54,19 @@ class SettingsTemplateTests(unittest.TestCase):
         self.assertIn("looks grainy", html)
         self.assertLess(html.index(">Tomato") if ">Tomato" in html else html.index("Tomato"), html.index("Banana"))
 
+    def test_blank_form_says_it_isnt_your_saved_settings(self):
+        html = render(signed_in=True, has_client=True)
+        self.assertIn("This is a blank form", html)
+        self.assertIn('href="/playlist"', html)
+
+    def test_a_saved_entry_doesnt_show_the_blank_form_note(self):
+        html = render(signed_in=True, has_client=True, plugin_instance="Kitchen")
+        self.assertNotIn("This is a blank form", html)
+
+    def test_first_time_setup_doesnt_show_the_blank_form_note(self):
+        self.assertNotIn("This is a blank form", render())
+        self.assertNotIn("This is a blank form", render(has_client=True, auth_url="https://example.com"))
+
     def test_colour_guide_waits_until_signed_in(self):
         self.assertNotIn("Panel colours:", render())
 

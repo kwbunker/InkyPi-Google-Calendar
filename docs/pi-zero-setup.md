@@ -145,6 +145,8 @@ Clicking **Update Now** is a one-off. For automatic updates:
 1. Check your calendars and choose a layout, then click **Update Now** and compare the panel with Google Calendar.
 2. Click **Add to Playlist**, give it a name using only letters, numbers and spaces, and choose a refresh interval.
 
+**To change your settings later, open the entry from Playlists.** Opening Google Calendar from the plugin list gives you a blank form instead, with only your primary calendar ticked. It's easy to mistake for your saved settings, so the page now says so. Your saved entry isn't affected unless you click **Save** on the entry itself. On the blank form, **Update Now** shows those choices until the next scheduled refresh, and **Add to Playlist** creates a second entry.
+
 **The instance interval can't beat the system interval.** InkyPi only wakes up at the **Plugin Cycle Interval** in **Settings**, an hour by default, so a 15-minute instance interval still refreshes hourly unless you lower that too. Hourly suits this plugin, and each refresh on a Zero 2 W also means rendering with Chromium.
 
 **If the playlist entry never updates,** open it from **Playlists** and check that your calendars are still selected. InkyPi resets the form after **Add to Playlist**, even when adding failed. Plugin versions before this guide let a retry save no calendars, Afrikaans as the language, and the smallest font. This is fixed now, but entries saved that way need fixing and saving again.

@@ -1,4 +1,9 @@
 <div id="gcalSettings">
+{% if signed_in and not plugin_instance %}
+<div class="gcal-message gcal-blank-form">
+  <strong>This is a blank form, not your saved settings.</strong> <em>Update Now</em> shows these choices on the panel until the next scheduled refresh, and <em>Add to Playlist</em> creates a new entry. To change a calendar you've already saved, open it from <a href="/playlist">Playlists</a>.
+</div>
+{% endif %}
 <div class="form-group">
   <label class="form-label">Google Account:</label>
 
