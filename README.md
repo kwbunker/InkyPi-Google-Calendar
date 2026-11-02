@@ -10,7 +10,9 @@ InkyPi's built-in Calendar plugin reads iCal feeds, which don't carry per-event 
 
 ## Install
 
-On your Pi:
+Starting from a blank SD card, or running into trouble? The [full setup guide](docs/pi-zero-setup.md) covers the Pi, InkyPi and every awkward step in between.
+
+If InkyPi is already running, on your Pi:
 
 ```bash
 inkypi plugin install google_calendar https://github.com/kwbunker/InkyPi-google_calendar
@@ -28,6 +30,8 @@ This uses the [Google Calendar API](https://developers.google.com/workspace/cale
 6. Open the sign-in link and allow access. Your browser ends up on a `localhost` page that won't load, which is expected.
 7. Copy the whole address from the address bar, paste it into the plugin's settings, click **Update Now**, and reload the page.
 8. Choose your calendars, then add the plugin to a playlist with a refresh interval.
+
+Two of those **Update Now** clicks show a message starting with "Error!" even though they worked, because that's the only way a plugin can show a message there.
 
 The plugin only asks for read-only access. Your credentials and sign-in token stay on your Pi in `src/config/google_calendar/`, readable only by the InkyPi service, and they survive plugin reinstalls.
 
