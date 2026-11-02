@@ -1,3 +1,4 @@
+<div id="gcalSettings">
 <div class="form-group">
   <label class="form-label">Google Account:</label>
 
@@ -47,6 +48,7 @@
       <label for="calendar_{{ loop.index }}">{{ calendar.summary }}</label>
     </div>
   {% endfor %}
+  <div class="gcal-message" id="gcalNoneSelected" style="display: none;">Select at least one calendar, or this instance can't update the display.</div>
   <small class="form-info">Each event uses its own colour from Google Calendar. Events with no colour of their own use the closest panel colour to their calendar's colour.</small>
 </div>
 {% endif %}
@@ -143,6 +145,7 @@
         </select>
     </div>
 </div>
+</div>
 
 <style>
 .gcal-message {
@@ -214,6 +217,43 @@
         checkbox.value = value;
     }
 
+    // InkyPi resets this form after "Add to Playlist", even when adding failed, and a reset
+    // returns each field to its default. These fields are filled in by script, so without
+    // this a retry would save every calendar unchecked and the first option in each list.
+    function keepChoicesThroughReset() {
+        const root = document.getElementById('gcalSettings');
+        root.querySelectorAll('input[type="checkbox"]').forEach(box => {
+            const remember = () => { box.defaultChecked = box.checked; };
+            remember();
+            box.addEventListener('change', remember);
+        });
+        root.querySelectorAll('select').forEach(select => {
+            const remember = () => {
+                Array.from(select.options).forEach(option => { option.defaultSelected = option.selected; });
+            };
+            remember();
+            select.addEventListener('change', remember);
+        });
+        root.querySelectorAll('input[type="number"], input[type="color"]').forEach(input => {
+            const remember = () => { input.defaultValue = input.value; };
+            remember();
+            input.addEventListener('input', remember);
+        });
+    }
+
+    function warnWhenNoCalendarSelected() {
+        const warning = document.getElementById('gcalNoneSelected');
+        const boxes = document.querySelectorAll('input[name="calendarIds[]"]');
+        if (!warning) {
+            return;
+        }
+        const update = () => {
+            warning.style.display = Array.from(boxes).some(box => box.checked) ? 'none' : '';
+        };
+        update();
+        boxes.forEach(box => box.addEventListener('change', update));
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         const saved = loadPluginSettings ? pluginSettings : {};
         const viewMode = saved.viewMode || 'timeGrid2Week';
@@ -244,6 +284,8 @@
             box.checked = selected ? selected.includes(box.value) : box.dataset.primary === 'true';
         });
 
+        keepChoicesThroughReset();
+        warnWhenNoCalendarSelected();
         updateViewDependentOptions(viewMode);
     });
 </script>

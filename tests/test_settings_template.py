@@ -48,6 +48,14 @@ class SettingsTemplateTests(unittest.TestCase):
         for params in ({}, {"has_client": True, "auth_url": "x"}, {"signed_in": True, "has_client": True}):
             self.assertEqual(render(**params).count('name="credentialsContent"'), 1, params)
 
+    def test_choices_are_protected_from_the_form_reset(self):
+        # InkyPi resets the form after Add to Playlist, which once saved an instance with no calendars.
+        html = render(signed_in=True, has_client=True)
+        self.assertIn('id="gcalSettings"', html)
+        self.assertIn("keepChoicesThroughReset();", html)
+        self.assertIn('id="gcalNoneSelected"', html)
+        self.assertLess(html.index('name="fontSize"'), html.index("</div>\n</div>\n</div>\n\n<style>"))
+
     def test_a_calendar_error_is_shown(self):
         html = render(signed_in=True, has_client=True, calendar_error="Could not reach Google")
         self.assertIn("Could not reach Google", html)
