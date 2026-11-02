@@ -1,0 +1,119 @@
+{% extends "plugin.html" %}
+
+{% block content %}
+
+<script src="{{static_dir}}/scripts/calendar.min.js" charset="UTF-8"></script>
+
+{% if view == 'timeGrid2Week' %}
+<div class="two-week" style="--font-scale: {{ font_scale }}; --fc-border-color: {{ plugin_settings.textColor or 'black' }}; --fc-page-bg-color: {{ plugin_settings.backgroundColor or 'white' }}; --fc-today-bg-color: transparent;">
+    <div id="week-1" class="calendar week"></div>
+    <div id="week-2" class="calendar week"></div>
+</div>
+{% else %}
+<div id="calendar" class="calendar" style="
+--fc-page-bg-color: {{ plugin_settings.backgroundColor or 'white' }};
+--fc-border-color: {{ plugin_settings.textColor or 'black' }};
+--fc-today-bg-color: transparent;
+--fc-now-indicator-color: {{ plugin_settings.nowIndicatorColor or 'red' }};
+--fc-event-border-color: {{ plugin_settings.textColor or 'black' }};
+--fc-small-font-size: {{ 0.85 * font_scale }}em;
+--fc-title-font-size: {{ 1.75 * font_scale }}em;
+--fc-table-font-size: {{ 1 * font_scale }}em;
+"></div>
+{% endif %}
+<div class="updated-stamp">Updated {{ updated }}</div>
+
+<script>
+    const events = {{ events | tojson }};
+    const showEventTime = {{ (plugin_settings.displayEventTime == "true") | tojson }};
+    const showEventDetails = {{ (plugin_settings.displayEventDetails == "true") | tojson }};
+
+    function textBlock(className, text) {
+        const block = document.createElement('div');
+        block.className = className;
+        block.textContent = text;
+        return block;
+    }
+
+    // Built with textContent so a title containing < or & can't break the page.
+    function renderEvent(arg) {
+        const bubble = document.createElement('div');
+        bubble.className = 'event-bubble';
+        const time = arg.event.allDay ? 'All Day' : arg.timeText;
+        if (showEventTime && time) {
+            bubble.appendChild(textBlock('event-time', time));
+        }
+        bubble.appendChild(textBlock('event-title', arg.event.title));
+        if (showEventDetails) {
+            const { location, description } = arg.event.extendedProps;
+            if (location) {
+                bubble.appendChild(textBlock('event-detail', location));
+            }
+            if (description) {
+                bubble.appendChild(textBlock('event-detail', description.length > 50 ? description.substring(0, 50) + '...' : description));
+            }
+        }
+        return { domNodes: [bubble] };
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const is12Hour = {{ (time_format == "12h") | tojson }};
+        const timeFormat = {
+            hour: "numeric",
+            minute: "2-digit",
+            omitZeroMinute: false,
+            hour12: is12Hour,
+            meridiem: 'short'
+        };
+        const commonOptions = {
+            events: events,
+            now: '{{ current_dt }}',
+            // Times arrive already converted to the device's time zone, with no offset.
+            timeZone: 'UTC',
+            contentHeight: '100%',
+            expandRows: true,
+            locale: "{{ plugin_settings.language or 'en' }}",
+            firstDay: {{ first_day }},
+            eventTimeFormat: timeFormat,
+            displayEventTime: showEventTime,
+            weekends: {{ (plugin_settings.displayWeekends == "true") | tojson }}
+        };
+
+        {% if view == 'timeGrid2Week' %}
+        const weekStarts = {{ week_starts | tojson }};
+        ['week-1', 'week-2'].forEach(function (id, index) {
+            new FullCalendar.Calendar(document.getElementById(id), {
+                ...commonOptions,
+                initialView: 'dayGridWeek',
+                initialDate: weekStarts[index],
+                headerToolbar: false,
+                dayHeaderFormat: { weekday: 'short', month: 'numeric', day: 'numeric', omitCommas: true },
+                displayEventEnd: true,
+                dayMaxEvents: false,
+                eventDisplay: 'block',
+                eventContent: renderEvent
+            }).render();
+        });
+        {% else %}
+        new FullCalendar.Calendar(document.getElementById('calendar'), {
+            ...commonOptions,
+            initialView: '{{ view }}',
+            slotDuration: '01:00:00',
+            slotLabelFormat: timeFormat,
+            slotMinTime: "{{ plugin_settings.startTimeInterval or '00' }}:00:00",
+            slotMaxTime: "{{ plugin_settings.endTimeInterval or 24 }}:00:00",
+            nowIndicator: {{ (plugin_settings.displayNowIndicator == "true") | tojson }},
+            fixedWeekCount: false,
+            {% if view == 'timeGrid' %}duration: { days: 7 },{% endif %}
+            headerToolbar: {
+                left: '',
+                center: "{{ 'title' if plugin_settings.displayTitle == 'true' else '' }}",
+                right: ''
+            },
+            {% if plugin_settings.displayEventDetails == "true" %}eventContent: renderEvent{% endif %}
+        }).render();
+        {% endif %}
+    });
+</script>
+
+{% endblock %}

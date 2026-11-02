@@ -1,0 +1,249 @@
+<div class="form-group">
+  <label class="form-label">Google Account:</label>
+
+  {% if signed_in %}
+    <div class="gcal-message gcal-ok">Signed in to Google Calendar.</div>
+  {% elif auth_url %}
+    <div class="gcal-message">
+      <strong>Sign in to Google</strong>
+      <ol>
+        <li><a href="{{ auth_url }}" target="_blank" rel="noopener">Open this Google sign-in link</a> and allow access. Google warns that the app isn't verified: choose <em>Advanced</em>, then continue.</li>
+        <li>Your browser ends up on a <code>localhost</code> page that won't load. That's expected.</li>
+        <li>Copy the whole address from the browser's address bar and paste it below.</li>
+        <li>Click <em>Update Now</em>, then reload this page.</li>
+      </ol>
+    </div>
+    <label for="authResponse" class="form-label">Address from your browser:</label>
+    <input type="text" id="authResponse" name="authResponse" class="form-input" autocomplete="off" placeholder="http://localhost/?state=...&code=...">
+  {% else %}
+    <div class="gcal-message">
+      <strong>Connect a Google Cloud project</strong>
+      <ol>
+        <li>In the <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>, enable the Google Calendar API.</li>
+        <li>Set up the OAuth consent screen and <strong>publish the app to Production</strong>. In Testing mode, Google ends the sign-in every 7 days.</li>
+        <li>Create an OAuth client of type <em>Desktop app</em> and download its JSON file.</li>
+        <li>Choose that file below, click <em>Update Now</em>, then reload this page.</li>
+      </ol>
+    </div>
+  {% endif %}
+
+  {% if has_client %}<details><summary>Use a different credentials file</summary>{% endif %}
+  <label for="credentialsFile" class="form-label">Credentials file:</label>
+  <input type="file" id="credentialsFile" class="form-input" accept=".json" onchange="loadCredentialsFile(this)">
+  <textarea id="credentialsContent" name="credentialsContent" style="display: none;"></textarea>
+  {% if has_client %}<small class="form-info">Replacing the file signs you out. Click <em>Update Now</em>, then reload this page.</small></details>{% endif %}
+</div>
+
+{% if signed_in %}
+<div class="form-group">
+  <label class="form-label">Calendars:</label>
+  {% if calendar_error %}
+    <div class="gcal-message">{{ calendar_error }}</div>
+  {% endif %}
+  {% for calendar in available_calendars %}
+    <div class="gcal-calendar">
+      <input type="checkbox" name="calendarIds[]" value="{{ calendar.id }}" id="calendar_{{ loop.index }}" data-primary="{{ 'true' if calendar.primary else 'false' }}">
+      <span class="gcal-swatch" style="background-color: {{ calendar.backgroundColor }}"></span>
+      <label for="calendar_{{ loop.index }}">{{ calendar.summary }}</label>
+    </div>
+  {% endfor %}
+  <small class="form-info">Each event uses its own colour from Google Calendar. Events with no colour of their own use the closest panel colour to their calendar's colour.</small>
+</div>
+{% endif %}
+
+<div class="form-group">
+    <div class="form-group">
+        <label class="form-label">Layout: </label>
+        <div class="button-group" id="viewSelector">
+            <button type="button" data-value="timeGridDay" onclick="selectView(this)">Day</button>
+            <button type="button" data-value="timeGridWeek" onclick="selectView(this)">Week</button>
+            <button type="button" data-value="timeGrid2Week" onclick="selectView(this)">2 Weeks</button>
+            <button type="button" data-value="dayGridMonth" onclick="selectView(this)">Month</button>
+            <button type="button" data-value="listMonth" onclick="selectView(this)">List</button>
+        </div>
+    </div>
+    <input type="hidden" name="viewMode" id="viewMode" value="timeGrid2Week">
+
+    <div class="form-group">
+        <label for="language" class="form-label">Language:</label>
+        <select id="language" name="language" class="form-input">
+            {% for code, name in locale_map.items() %}
+                <option value="{{ code }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="form-group">
+    <label class="form-label">Display: </label>
+
+    <div class="form-group" data-visible-modes="timeGridDay,timeGridWeek,dayGridMonth,listMonth">
+      <input type="checkbox" id="displayTitle" name="displayTitle" value="true" checked onclick="this.value=this.checked ? 'true' : 'false';">
+      <span>Title</span>
+    </div>
+
+    <div class="form-group">
+        <input type="checkbox" id="displayWeekends" name="displayWeekends" value="true" checked onclick="this.value=this.checked ? 'true' : 'false';">
+        <span>Weekends</span>
+    </div>
+
+    <div class="form-group">
+      <input type="checkbox" id="displayEventTime" name="displayEventTime" value="true" checked onclick="this.value=this.checked ? 'true' : 'false';">
+      <span>Event Time</span>
+    </div>
+
+    <div class="form-group">
+      <input type="checkbox" id="displayEventDetails" name="displayEventDetails" value="false" onclick="this.value=this.checked ? 'true' : 'false';">
+      <span>Event Details (Description &amp; Location)</span>
+    </div>
+
+    <div class="form-group" data-visible-modes="timeGridDay,timeGridWeek">
+      <input type="checkbox" id="displayNowIndicator" name="displayNowIndicator" value="true" checked onclick="this.value=this.checked ? 'true' : 'false';">
+      <span>Now Indicator</span>
+      <input type="color" id="nowIndicatorColor" name="nowIndicatorColor" class="color-picker" value="#ff0000">
+    </div>
+
+    <div class="form-group" data-visible-modes="timeGridWeek">
+      <input type="checkbox" id="displayPreviousDays" name="displayPreviousDays" value="true" checked onclick="this.value=this.checked ? 'true' : 'false';">
+      <span>Previous Days</span>
+    </div>
+</div>
+
+<div class="form-group">
+    <div class="form-group nowrap" data-visible-modes="timeGridWeek,timeGrid2Week,dayGridMonth">
+        <label for="weekStartDay" class="form-label">Week Start Day:</label>
+        <select id="weekStartDay" name="weekStartDay" class="form-input">
+            <option value="0">Sunday</option>
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+        </select>
+    </div>
+
+    <div class="form-group nowrap" data-visible-modes="timeGridDay,timeGridWeek">
+        <label for="startTimeInterval">Time Interval:</label>
+        <input type="number" id="startTimeInterval" name="startTimeInterval" class="form-input" min="0" max="24" placeholder="00">
+        -
+        <input type="number" id="endTimeInterval" name="endTimeInterval" class="form-input" min="0" max="24" placeholder="24">
+    </div>
+
+    <div class="form-group nowrap">
+        <label for="fontSize" class="form-label">Font Size:</label>
+        <select id="fontSize" name="fontSize" class="form-input">
+            <option value="x-small">Extra Small</option>
+            <option value="smaller">Smaller</option>
+            <option value="small">Small</option>
+            <option value="normal">Normal</option>
+            <option value="large">Large</option>
+            <option value="larger">Larger</option>
+            <option value="x-large">Extra Larger</option>
+        </select>
+    </div>
+</div>
+
+<style>
+.gcal-message {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+}
+
+.gcal-message ol {
+    margin: 8px 0 0 20px;
+}
+
+.gcal-ok {
+    border-color: #2e7d32;
+}
+
+.gcal-calendar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0;
+}
+
+.gcal-swatch {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+}
+</style>
+
+<script>
+    function selectView(button) {
+        document.querySelectorAll('#viewSelector button').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        const value = button.getAttribute('data-value');
+        document.getElementById('viewMode').value = value;
+        updateViewDependentOptions(value);
+    }
+
+    function updateViewDependentOptions(viewMode) {
+        document.querySelectorAll('[data-visible-modes]').forEach(el => {
+            const shouldShow = el.getAttribute('data-visible-modes').split(',').includes(viewMode);
+            el.style.display = shouldShow ? '' : 'none';
+            el.querySelectorAll('input, select, textarea').forEach(input => {
+                input.disabled = !shouldShow;
+            });
+        });
+    }
+
+    function loadCredentialsFile(input) {
+        const file = input.files[0];
+        if (!file) {
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = event => {
+            document.getElementById('credentialsContent').value = event.target.result;
+        };
+        reader.readAsText(file);
+    }
+
+    function restoreCheckbox(id, savedValue, defaultValue) {
+        const value = savedValue === undefined ? defaultValue : savedValue;
+        const checkbox = document.getElementById(id);
+        checkbox.checked = value === 'true';
+        checkbox.value = value;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const saved = loadPluginSettings ? pluginSettings : {};
+        const viewMode = saved.viewMode || 'timeGrid2Week';
+
+        document.getElementById('viewMode').value = viewMode;
+        document.querySelectorAll('#viewSelector button').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-value') === viewMode);
+        });
+
+        document.getElementById('language').value = saved.language || 'en';
+        document.getElementById('fontSize').value = saved.fontSize || 'normal';
+        document.getElementById('weekStartDay').value = saved.weekStartDay || '0';
+        document.getElementById('startTimeInterval').value = saved.startTimeInterval || '';
+        document.getElementById('endTimeInterval').value = saved.endTimeInterval || '';
+        document.getElementById('nowIndicatorColor').value = saved.nowIndicatorColor || '#ff0000';
+
+        // An unchecked box isn't submitted, so a saved instance with no value means unchecked.
+        const missing = loadPluginSettings ? 'false' : undefined;
+        restoreCheckbox('displayTitle', saved.displayTitle ?? missing, 'true');
+        restoreCheckbox('displayWeekends', saved.displayWeekends ?? missing, 'true');
+        restoreCheckbox('displayEventTime', saved.displayEventTime ?? missing, 'true');
+        restoreCheckbox('displayEventDetails', saved.displayEventDetails ?? missing, 'false');
+        restoreCheckbox('displayNowIndicator', saved.displayNowIndicator ?? missing, 'true');
+        restoreCheckbox('displayPreviousDays', saved.displayPreviousDays ?? missing, 'true');
+
+        const selected = saved['calendarIds[]'];
+        document.querySelectorAll('input[name="calendarIds[]"]').forEach(box => {
+            box.checked = selected ? selected.includes(box.value) : box.dataset.primary === 'true';
+        });
+
+        updateViewDependentOptions(viewMode);
+    });
+</script>

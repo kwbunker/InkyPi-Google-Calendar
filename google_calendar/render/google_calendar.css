@@ -1,0 +1,143 @@
+/* Solid colours only where possible: the panel has six inks, so greys and pale
+   tints turn into speckle. */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.calendar {
+  width: 100%;
+  height: 100%;
+  font-family: "Jost";
+  overflow: hidden;
+}
+
+.updated-stamp {
+  position: fixed;
+  right: 12px;
+  bottom: 6px;
+  padding: 0 6px;
+  background: white;
+  color: black;
+  font-family: "Jost";
+  font-size: 18px;
+}
+
+.fc-toolbar.fc-header-toolbar {
+  margin-bottom: 0 !important;
+}
+
+.fc .fc-daygrid-body-natural .fc-daygrid-day-events {
+  margin-bottom: 0 !important;
+}
+
+.fc .fc-daygrid-day-number {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.fc-dayGridMonth-view .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame,
+.fc-timeGrid-view thead .fc-day.fc-day-today .fc-scrollgrid-sync-inner {
+  border: 2px solid var(--fc-border-color) !important;
+}
+
+.fc .fc-timegrid-now-indicator-line {
+  border-top-width: 3px !important;
+}
+
+.fc .fc-toolbar-title {
+  font-size: var(--fc-title-font-size) !important;
+}
+
+.fc table {
+  font-size: var(--fc-table-font-size) !important;
+}
+
+.event-detail {
+  font-size: 0.8em;
+  font-weight: normal;
+}
+
+.fc-listMonth-view .fc-list-event-title {
+  font-weight: 600 !important;
+}
+
+/* Two-week view: large, high-contrast event boxes for reading across a room. */
+.two-week {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.two-week .week {
+  flex: 1 1 50%;
+  min-height: 0;
+  font-size: calc(24px * var(--font-scale));
+}
+
+.two-week .week:first-child {
+  border-bottom: 4px solid black;
+  padding-bottom: 2px;
+}
+
+.two-week .week:last-child {
+  padding-top: 2px;
+}
+
+.two-week .fc-col-header-cell {
+  padding: 8px 4px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+/* Today is an inverted header: solid black needs no dithering. */
+.two-week .fc-col-header-cell.fc-day-today {
+  background: black;
+}
+
+.two-week .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+  color: white;
+}
+
+.two-week .fc-daygrid-day-frame {
+  padding: 3px !important;
+}
+
+.two-week .fc-daygrid-day-top {
+  display: none;
+}
+
+.two-week .fc-event {
+  margin: 3px 2px !important;
+  padding: 9px 12px !important;
+  border: 3px solid black !important;
+  border-radius: 12px !important;
+  white-space: normal !important;
+}
+
+.two-week .fc-daygrid-event-harness {
+  margin-bottom: 3px !important;
+}
+
+.event-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.two-week .event-time {
+  font-size: calc(21px * var(--font-scale));
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.two-week .event-title {
+  font-size: calc(30px * var(--font-scale));
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
