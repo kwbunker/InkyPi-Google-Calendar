@@ -65,6 +65,14 @@ class SettingsTemplateTests(unittest.TestCase):
             self.assertIn(f'<option value="{key}"', html)
         self.assertTrue(f'name="{calendar_api.CALENDAR_COLOR_PREFIX}a@b"' in html)
 
+    def test_each_calendar_can_choose_the_row_under_the_date(self):
+        html = render(signed_in=True, has_client=True, available_calendars=[
+            {"id": "a", "summary": "Meals", "backgroundColor": "#cabdbf", "panel": calendar_api.panel_color("white")},
+        ])
+        self.assertIn(f'<option value="{calendar_api.DATE_ROW}" data-name="Under date"', html)
+        self.assertIn("Under the date (titles only)</option>", html)
+        self.assertIn("only applies to the 2 Weeks layout", html)
+
     def test_each_panel_colour_has_a_note_field(self):
         html = render(signed_in=True, has_client=True)
         for key in calendar_api.INKY_COLORS:

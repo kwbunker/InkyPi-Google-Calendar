@@ -1,3 +1,5 @@
+import hashlib
+import json
 import logging
 import os
 import time
@@ -10,14 +12,18 @@ from plugins.base_plugin.base_plugin import BasePlugin
 from plugins.google_calendar.calendar_api import (
     AuthRequired,
     CalendarClient,
+    DATE_ROW,
     GoogleAuth,
+    INKY_COLORS,
     SetupRequired,
     chosen_calendar_colors,
     color_guide,
     fetch_events,
+    ink_colors,
     palette_name_for_hex,
     panel_color,
     should_warn,
+    split_date_row,
     view_range,
     warning_message,
     week_start,
@@ -76,19 +82,15 @@ class GoogleCalendar(BasePlugin):
             if settings.get("authResponse"):
                 auth.complete_sign_in(settings["authResponse"])
                 raise RuntimeError("Signed in to Google. Reload this page to choose your calendars.")
-            image = self._render_calendar(settings, device_config, auth)
-            self._remember_image(auth, image)
-            return image
+            return self._render_calendar(settings, device_config, auth)
 
         # A scheduled refresh has no one watching, so a failure must never just leave
         # the panel looking current. That's why this catches everything.
         try:
-            image = self._render_calendar(settings, device_config, auth)
+            return self._render_calendar(settings, device_config, auth)
         except Exception as error:
             logger.exception("Google Calendar refresh failed")
             return self._image_after_failure(error, device_config, auth)
-        self._remember_image(auth, image)
-        return image
 
     def _render_calendar(self, settings, device_config, auth):
         calendar_ids = settings.get("calendarIds[]")
@@ -108,8 +110,9 @@ class GoogleCalendar(BasePlugin):
         first_day = int(settings.get("weekStartDay") or 0)
         previous_days = settings.get("displayPreviousDays") == "true"
         start, end = view_range(view, now, tz, first_day, previous_days)
+        chosen_colors = chosen_calendar_colors(settings)
         events, failed_calendars = fetch_events(
-            CalendarClient(auth), calendar_ids, tz, start, end, chosen_calendar_colors(settings)
+            CalendarClient(auth), calendar_ids, tz, start, end, chosen_colors, _palette(device_config)
         )
         logger.info(f"Rendering Google Calendar: view={view}, events={len(events)}")
 
@@ -117,19 +120,38 @@ class GoogleCalendar(BasePlugin):
         if view == "timeGridWeek" and not previous_days:
             render_view = "timeGrid"
 
-        updated = f"{now:%b} {now.day}"
+        # Whole hours only, because anything finer would redraw the panel more often than
+        # the calendar changes. Views with no current-time line only depend on the date.
+        current_hour = now.replace(minute=0, second=0, microsecond=0, tzinfo=None)
+        shows_time_line = render_view in ("timeGridDay", "timeGridWeek", "timeGrid")
+        content_key = self._content_key(
+            settings, events, failed_calendars, dimensions, time_format,
+            current_hour if shows_time_line else now.date(),
+        )
+        # With nothing changed, the last image is still right, including its "Updated" time.
+        # That saves a Chromium render, and it means InkyPi won't redraw the panel.
+        unchanged_image = self._reuse_image(auth, content_key, dimensions)
+        if unchanged_image:
+            logger.info("Google Calendar unchanged, reusing the last image")
+            return unchanged_image
+
+        updated = _format_moment(now, time_format)
         if failed_calendars:
             updated += f" ({failed_calendars} of {len(calendar_ids)} calendars failed)"
+
+        # Only the two-week view has this row. Other views show these events as normal.
+        date_row = None
+        if view == "timeGrid2Week" and any(chosen_colors.get(calendar_id) == DATE_ROW for calendar_id in calendar_ids):
+            events, date_row = split_date_row(events)
 
         first_week = week_start(now.date(), first_day)
         template_params = {
             "view": render_view,
             "events": events,
-            # Whole hours only: InkyPi skips the panel refresh when the image is unchanged,
-            # so anything finer would refresh the panel more often than the calendar changes.
-            "current_dt": now.replace(minute=0, second=0, microsecond=0, tzinfo=None).isoformat(),
+            "current_dt": current_hour.isoformat(),
             "first_day": first_day,
             "week_starts": [first_week.isoformat(), (first_week + timedelta(days=7)).isoformat()],
+            "date_row": date_row,
             "updated": updated,
             "time_format": time_format,
             "plugin_settings": settings,
@@ -139,12 +161,45 @@ class GoogleCalendar(BasePlugin):
         image = self.render_image(dimensions, "google_calendar.html", "google_calendar.css", template_params)
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")
+        self._remember_image(auth, image, content_key)
         return image
 
     def _last_image_path(self, auth):
         return os.path.join(auth.state_dir, "last_image.png")
 
-    def _remember_image(self, auth, image):
+    def _last_key_path(self, auth):
+        return os.path.join(auth.state_dir, "last_image.json")
+
+    def _content_key(self, settings, events, failed_calendars, dimensions, time_format, moment):
+        """A fingerprint of everything that affects the image, apart from the "Updated" time."""
+        template_times = [
+            os.path.getmtime(self.get_plugin_dir(os.path.join("render", name)))
+            for name in ("google_calendar.html", "google_calendar.css")
+        ]
+        content = json.dumps(
+            [settings, events, failed_calendars, list(dimensions), time_format, moment, template_times],
+            sort_keys=True,
+            default=str,
+        )
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+    def _reuse_image(self, auth, content_key, dimensions):
+        path = self._last_image_path(auth)
+        try:
+            with open(self._last_key_path(auth), encoding="utf-8") as file:
+                if json.load(file).get("key") != content_key:
+                    return None
+            with Image.open(path) as saved:
+                if saved.size != tuple(dimensions):
+                    return None
+                image = saved.convert("RGB")
+            # The file's time is when a refresh last succeeded, which failure warnings rely on.
+            os.utime(path)
+            return image
+        except (OSError, ValueError):
+            return None
+
+    def _remember_image(self, auth, image, content_key):
         path = self._last_image_path(auth)
         temporary = path + ".tmp"
         try:
@@ -153,6 +208,9 @@ class GoogleCalendar(BasePlugin):
             with os.fdopen(descriptor, "wb") as file:
                 image.save(file, "PNG")
             os.replace(temporary, path)
+            descriptor = os.open(self._last_key_path(auth), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(descriptor, "w", encoding="utf-8") as file:
+                json.dump({"key": content_key}, file)
         except OSError as error:
             logger.warning(f"Could not save the last calendar image: {error}")
 
@@ -187,6 +245,15 @@ def _is_saved_instance(settings, device_config):
     return any(entry.settings is settings for playlist in manager.playlists for entry in playlist.plugins)
 
 
+def _palette(device_config):
+    """Pure colours, except on the 13.3" Inky, the only panel whose inks have been measured."""
+    is_inky = device_config.get_config("display_type", default="inky") == "inky"
+    if not is_inky or sorted(device_config.get_resolution()) != [1200, 1600]:
+        return INKY_COLORS
+    image_settings = device_config.get_config("image_settings") or {}
+    return ink_colors(image_settings.get("inky_saturation", 0.5))
+
+
 def _dimensions(device_config):
     dimensions = device_config.get_resolution()
     if device_config.get_config("orientation") == "vertical":
@@ -197,7 +264,11 @@ def _dimensions(device_config):
 def _format_time(timestamp, device_config):
     tz = pytz.timezone(device_config.get_config("timezone", default="America/New_York"))
     moment = datetime.fromtimestamp(timestamp, tz)
-    if device_config.get_config("time_format", default="12h") == "24h":
+    return _format_moment(moment, device_config.get_config("time_format", default="12h"))
+
+
+def _format_moment(moment, time_format):
+    if time_format == "24h":
         clock = moment.strftime("%H:%M")
     else:
         clock = moment.strftime("%I:%M %p").lstrip("0").lower().replace(" ", "")

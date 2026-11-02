@@ -58,11 +58,12 @@
         {% for color in color_guide %}
           <option value="{{ color.key }}" data-name="{{ color.name }}" data-appearance="{{ color.appearance }}" data-text="{{ color.text }}">{{ color.name }}</option>
         {% endfor %}
+        <option value="dateRow" data-name="Under date" data-appearance="#f0f0f0" data-text="#000000">Under the date (titles only)</option>
       </select>
     </div>
   {% endfor %}
   <div class="gcal-message" id="gcalNoneSelected" style="display: none;">Select at least one calendar, or this instance can't update the display.</div>
-  <small class="gcal-note">Beside each calendar is the panel colour its events get if they have no colour of their own. Changing it here only affects the panel, not your Google Calendar.</small>
+  <small class="gcal-note">Beside each calendar is the panel colour its events get if they have no colour of their own. Changing it here only affects the panel, not your Google Calendar. <em>Under the date</em> shows a calendar's event titles in a row under each date instead of boxes, which suits something like a dinner plan. It only applies to the 2 Weeks layout, and other layouts show those events as normal.</small>
 </div>
 
 <div class="form-group gcal-stack">

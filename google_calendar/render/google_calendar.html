@@ -5,7 +5,7 @@
 <script src="{{static_dir}}/scripts/calendar.min.js" charset="UTF-8"></script>
 
 {% if view == 'timeGrid2Week' %}
-<div class="two-week" style="--font-scale: {{ font_scale }}; --fc-border-color: {{ plugin_settings.textColor or 'black' }}; --fc-page-bg-color: {{ plugin_settings.backgroundColor or 'white' }}; --fc-today-bg-color: transparent;">
+<div class="two-week" style="--font-scale: {{ font_scale }}; --fit-scale: 1; --fc-border-color: {{ plugin_settings.textColor or 'black' }}; --fc-page-bg-color: {{ plugin_settings.backgroundColor or 'white' }}; --fc-today-bg-color: transparent;">
     <div id="week-1" class="calendar week"></div>
     <div id="week-2" class="calendar week"></div>
 </div>
@@ -81,19 +81,123 @@
 
         {% if view == 'timeGrid2Week' %}
         const weekStarts = {{ week_starts | tojson }};
-        ['week-1', 'week-2'].forEach(function (id, index) {
-            new FullCalendar.Calendar(document.getElementById(id), {
-                ...commonOptions,
-                initialView: 'dayGridWeek',
-                initialDate: weekStarts[index],
-                headerToolbar: false,
-                dayHeaderFormat: { weekday: 'short', month: 'numeric', day: 'numeric', omitCommas: true },
-                displayEventEnd: true,
-                dayMaxEvents: false,
-                eventDisplay: 'block',
-                eventContent: renderEvent
-            }).render();
-        });
+        const dateRow = {{ date_row | tojson }};
+        const container = document.querySelector('.two-week');
+        const weeks = ['week-1', 'week-2'].map(id => document.getElementById(id));
+        const FIT_STEP = 0.05;
+        const SMALLEST_FIT = 0.6;
+        let calendars = [];
+
+        // The row goes inside the date's own cell, so it reads as part of the date. Days with
+        // no titles still get an empty one, which keeps the line under the dates unbroken.
+        function renderDayHeader(arg) {
+            const nodes = [textBlock('day-date', arg.text)];
+            if (dateRow) {
+                const row = document.createElement('div');
+                row.className = 'date-row';
+                (dateRow[arg.date.toISOString().slice(0, 10)] || []).forEach(title => {
+                    row.appendChild(textBlock('date-row-title', title));
+                });
+                nodes.push(row);
+            }
+            return { domNodes: nodes };
+        }
+
+        function renderWeeks(fitScale, limitEvents) {
+            container.style.setProperty('--fit-scale', fitScale);
+            calendars.forEach(calendar => calendar.destroy());
+            weeks.forEach(week => { week.style.flex = ''; });
+            calendars = weeks.map((week, index) => {
+                const calendar = new FullCalendar.Calendar(week, {
+                    ...commonOptions,
+                    initialView: 'dayGridWeek',
+                    initialDate: weekStarts[index],
+                    headerToolbar: false,
+                    dayHeaderFormat: { weekday: 'short', month: 'numeric', day: 'numeric', omitCommas: true },
+                    dayHeaderContent: renderDayHeader,
+                    displayEventEnd: true,
+                    dayMaxEvents: limitEvents,
+                    eventDisplay: 'block',
+                    eventContent: renderEvent
+                });
+                calendar.render();
+                return calendar;
+            });
+        }
+
+        function headerHeight(week) {
+            const top = week.getBoundingClientRect().top;
+            const header = week.querySelector('.fc-col-header');
+            return header ? header.getBoundingClientRect().bottom - top : 0;
+        }
+
+        // How tall a week would be with nothing cut off, whatever height it has now.
+        function heightNeeded(week) {
+            const top = week.getBoundingClientRect().top;
+            let bottom = top + headerHeight(week);
+            week.querySelectorAll('.fc-daygrid-event-harness').forEach(event => {
+                bottom = Math.max(bottom, event.getBoundingClientRect().bottom);
+            });
+            return bottom - top + 12;
+        }
+
+        // Moves the line between the weeks so a busy week can use a quiet week's spare room.
+        function shareHeight(needed, total) {
+            if (needed[0] <= total / 2 && needed[1] <= total / 2) {
+                return;
+            }
+            const spare = (total - needed[0] - needed[1]) / 2;
+            weeks.forEach((week, index) => { week.style.flex = `0 0 ${needed[index] + spare}px`; });
+            calendars.forEach(calendar => calendar.updateSize());
+        }
+
+        function heightsAt(scale) {
+            renderWeeks(scale, false);
+            return weeks.map(heightNeeded);
+        }
+
+        // Finds the largest size that fits, starting from an estimate to keep renders few,
+        // because each one is slow on a Pi Zero. A week that's still too full at the smallest
+        // size shows "+N more" rather than silently losing events.
+        function fitWeeks() {
+            const total = container.clientHeight;
+            const fits = heights => heights[0] + heights[1] <= total;
+            const step = (scale, direction) => Math.round((scale + direction * FIT_STEP) * 100) / 100;
+
+            let needed = heightsAt(1);
+            if (!fits(needed)) {
+                const headers = headerHeight(weeks[0]) + headerHeight(weeks[1]);
+                const estimate = (total - headers) / (needed[0] + needed[1] - headers);
+                let scale = Math.max(SMALLEST_FIT, Math.floor(estimate / FIT_STEP) * FIT_STEP);
+                scale = Math.round(scale * 100) / 100;
+                needed = heightsAt(scale);
+                while (!fits(needed) && scale > SMALLEST_FIT) {
+                    scale = step(scale, -1);
+                    needed = heightsAt(scale);
+                }
+                if (!fits(needed)) {
+                    renderWeeks(SMALLEST_FIT, true);
+                    return;
+                }
+                // Smaller text wraps less, so the estimate can be more cautious than it needs to be.
+                while (scale < 1) {
+                    const larger = heightsAt(step(scale, 1));
+                    if (!fits(larger)) {
+                        needed = heightsAt(scale);
+                        break;
+                    }
+                    scale = step(scale, 1);
+                    needed = larger;
+                }
+            }
+            shareHeight(needed, total);
+        }
+
+        fitWeeks();
+        // Text measures differently once the real font has loaded, so fit again if it hadn't.
+        if (document.fonts.status !== 'loaded') {
+            document.fonts.ready.then(fitWeeks);
+        }
         {% else %}
         new FullCalendar.Calendar(document.getElementById('calendar'), {
             ...commonOptions,

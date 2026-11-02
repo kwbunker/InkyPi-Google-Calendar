@@ -163,6 +163,39 @@ class ColourTests(unittest.TestCase):
                     self.assertEqual(event["backgroundColor"], row["hex"], color["name"])
                     self.assertEqual(event["textColor"], row["text"], color["name"])
 
+    def test_ink_colours_are_the_drivers_exact_palette(self):
+        # From _palette_blend in Pimoroni's inky_el133uf1 driver, at saturation 0.5.
+        colors = calendar_api.ink_colors(0.5)
+        self.assertEqual(colors["red"], "#cd2425")
+        self.assertEqual(colors["yellow"], "#e7de23")
+        self.assertEqual(colors["blue"], "#1e1dae")
+        self.assertEqual(colors["green"], "#1dad23")
+
+    def test_ink_colours_run_from_pure_to_measured(self):
+        for name in ("red", "yellow", "green", "blue", "orange"):
+            self.assertEqual(calendar_api.ink_colors(0)[name], calendar_api.INKY_COLORS[name].lower(), name)
+            self.assertEqual(calendar_api.ink_colors(1)[name], calendar_api.PANEL_APPEARANCE[name], name)
+
+    def test_orange_stays_halfway_between_red_and_yellow_inks(self):
+        colors = calendar_api.ink_colors(0.5)
+        red, yellow, orange = (calendar_api._rgb(colors[name]) for name in ("red", "yellow", "orange"))
+        for low, high, middle in zip(red, yellow, orange):
+            self.assertAlmostEqual(middle, (low + high) / 2, delta=1)
+
+    def test_black_and_white_stay_pure_at_every_saturation(self):
+        for saturation in (0, 0.5, 1):
+            colors = calendar_api.ink_colors(saturation)
+            self.assertEqual(colors["white"], "#FFFFFF")
+            self.assertEqual(colors["black"], "#000000")
+
+    def test_palette_changes_the_background_but_not_the_text_colour(self):
+        event = to_fullcalendar_event(
+            {"start": {"date": "2025-10-21"}, "end": {"date": "2025-10-22"}},
+            "yellow", DENVER, calendar_api.ink_colors(1),
+        )
+        self.assertEqual(event["backgroundColor"], calendar_api.PANEL_APPEARANCE["yellow"])
+        self.assertEqual(event["textColor"], contrast_color(calendar_api.INKY_COLORS["yellow"]))
+
     def test_guide_explains_the_colours_with_no_simple_match(self):
         notes = {row["name"]: row["note"] for row in calendar_api.color_guide()}
         self.assertIn("grainy", notes["Orange"])
@@ -449,6 +482,54 @@ class ChosenColourTests(AuthTestCase):
 
     def test_a_choice_only_affects_its_own_calendar(self):
         self.assertEqual(self.fetch([self.plain], {"other": "green"})[0]["backgroundColor"], "#FFFFFF")
+
+    def test_the_date_row_is_a_valid_choice(self):
+        chosen = calendar_api.chosen_calendar_colors({"calendarColor:meals": calendar_api.DATE_ROW})
+        self.assertEqual(chosen, {"meals": calendar_api.DATE_ROW})
+
+    def test_only_date_row_calendars_are_marked(self):
+        self.assertTrue(self.fetch([self.plain], {"cal": calendar_api.DATE_ROW})[0]["dateRow"])
+        self.assertFalse(self.fetch([self.plain], {"cal": "green"})[0]["dateRow"])
+        self.assertFalse(self.fetch([self.plain], {})[0]["dateRow"])
+
+    def test_a_date_row_calendar_keeps_a_colour_for_layouts_without_the_row(self):
+        self.assertEqual(self.fetch([self.plain], {"cal": calendar_api.DATE_ROW})[0]["backgroundColor"], "#FFFFFF")
+
+
+class DateRowTests(unittest.TestCase):
+    def row_event(self, title, start, end, all_day=True, in_row=True):
+        return {"title": title, "start": start, "end": end, "allDay": all_day, "dateRow": in_row}
+
+    def test_boxes_and_titles_are_separated(self):
+        box = self.row_event("Dentist", "2026-11-03T10:00:00", "2026-11-03T11:00:00", all_day=False, in_row=False)
+        dinner = self.row_event("Tacos", "2026-11-03", "2026-11-04")
+        boxes, titles = calendar_api.split_date_row([box, dinner])
+        self.assertEqual(boxes, [box])
+        self.assertEqual(titles, {"2026-11-03": ["Tacos"]})
+
+    def test_all_day_events_appear_on_each_day_but_not_their_exclusive_end(self):
+        _, titles = calendar_api.split_date_row([self.row_event("Camping", "2026-11-07", "2026-11-10")])
+        self.assertEqual(titles, {day: ["Camping"] for day in ("2026-11-07", "2026-11-08", "2026-11-09")})
+
+    def test_a_month_boundary_is_handled(self):
+        _, titles = calendar_api.split_date_row([self.row_event("Trip", "2026-11-30", "2026-12-02")])
+        self.assertEqual(sorted(titles), ["2026-11-30", "2026-12-01"])
+
+    def test_timed_events_only_appear_on_the_day_they_start(self):
+        late = self.row_event("Late Dinner", "2026-11-03T22:00:00", "2026-11-04T01:00:00", all_day=False)
+        _, titles = calendar_api.split_date_row([late])
+        self.assertEqual(titles, {"2026-11-03": ["Late Dinner"]})
+
+    def test_several_titles_on_a_day_keep_their_order(self):
+        _, titles = calendar_api.split_date_row([
+            self.row_event("Soup", "2026-11-05", "2026-11-06"),
+            self.row_event("Bread", "2026-11-05", "2026-11-06"),
+        ])
+        self.assertEqual(titles, {"2026-11-05": ["Soup", "Bread"]})
+
+    def test_events_with_no_mark_stay_boxes(self):
+        plain = {"title": "E", "start": "2026-11-03", "end": "2026-11-04", "allDay": True}
+        self.assertEqual(calendar_api.split_date_row([plain]), ([plain], {}))
 
 
 class FailureDecisionTests(unittest.TestCase):

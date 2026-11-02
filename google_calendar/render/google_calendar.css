@@ -90,6 +90,26 @@
   padding: 8px 4px !important;
   font-weight: 700 !important;
   line-height: 1.2 !important;
+  vertical-align: top !important;
+}
+
+.two-week .fc-col-header-cell-cushion {
+  display: block !important;
+}
+
+/* Titles under the date with no box, reaching the cell's edges to read as a table row.
+   The negative margins undo the padding of the cell and the cushion. */
+.date-row {
+  min-height: calc(1.2em + 8px);
+  margin: 6px -8px 0;
+  padding: 6px 8px 0;
+  border-top: 2px solid currentColor;
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+.date-row-title + .date-row-title {
+  margin-top: 4px;
 }
 
 /* Today is an inverted header: solid black needs no dithering. */
@@ -109,33 +129,40 @@
   display: none;
 }
 
+/* --fit-scale shrinks only the event boxes, when a week would otherwise overflow. */
 .two-week .fc-event {
-  margin: 3px 2px !important;
-  padding: 9px 12px !important;
+  margin: calc(3px * var(--fit-scale)) 2px !important;
+  padding: calc(9px * var(--fit-scale)) calc(12px * var(--fit-scale)) !important;
   border: 3px solid black !important;
   border-radius: 12px !important;
   white-space: normal !important;
 }
 
 .two-week .fc-daygrid-event-harness {
-  margin-bottom: 3px !important;
+  margin-bottom: calc(3px * var(--fit-scale)) !important;
+}
+
+.two-week .fc-daygrid-more-link {
+  color: black;
+  font-size: calc(20px * var(--font-scale));
+  font-weight: 700;
 }
 
 .event-bubble {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: calc(3px * var(--fit-scale));
   width: 100%;
 }
 
 .two-week .event-time {
-  font-size: calc(21px * var(--font-scale));
+  font-size: calc(21px * var(--font-scale) * var(--fit-scale));
   font-weight: 600;
   line-height: 1.2;
 }
 
 .two-week .event-title {
-  font-size: calc(30px * var(--font-scale));
+  font-size: calc(30px * var(--font-scale) * var(--fit-scale));
   font-weight: 800;
   line-height: 1.2;
   overflow-wrap: break-word;

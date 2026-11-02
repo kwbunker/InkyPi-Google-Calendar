@@ -10,8 +10,9 @@ import sys
 import tempfile
 import time
 import unittest
+from datetime import datetime
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from PIL import Image, ImageFont
 
@@ -64,6 +65,30 @@ class WarningBannerTests(unittest.TestCase):
         first = add_warning_banner(self.base, "Same.", "Nov 1, 5:00pm", self.font)
         second = add_warning_banner(self.base, "Same.", "Nov 1, 5:00pm", self.font)
         self.assertEqual(digest(first), digest(second))
+
+
+@unittest.skipIf(plugin_module is None, "needs InkyPi on the Python path")
+class PaletteTests(unittest.TestCase):
+    def palette(self, resolution=(1600, 1200), **config):
+        device = SimpleNamespace(
+            get_resolution=lambda: list(resolution),
+            get_config=lambda key, default=None: config.get(key, default),
+        )
+        return plugin_module._palette(device)
+
+    def test_follows_the_devices_saturation_on_the_measured_panel(self):
+        palette = self.palette(image_settings={"inky_saturation": 1.0})
+        self.assertEqual(palette, plugin_module.ink_colors(1.0))
+
+    def test_saturation_defaults_to_the_drivers_default(self):
+        self.assertEqual(self.palette(), plugin_module.ink_colors(0.5))
+
+    def test_portrait_panel_counts_as_the_same_panel(self):
+        self.assertEqual(self.palette(resolution=(1200, 1600)), plugin_module.ink_colors(0.5))
+
+    def test_other_panels_keep_pure_colours(self):
+        self.assertEqual(self.palette(resolution=(800, 480)), plugin_module.INKY_COLORS)
+        self.assertEqual(self.palette(display_type="epd7in3e"), plugin_module.INKY_COLORS)
 
 
 @unittest.skipIf(plugin_module is None, "needs InkyPi on the Python path")
@@ -146,7 +171,8 @@ class PluginFailureTests(unittest.TestCase):
     def test_a_rendering_failure_still_warns(self):
         self.succeed()
         self.age_last_image(4 * 60 * 60)
-        with patch.object(plugin_module, "fetch_events", return_value=([], 0)), \
+        # New events, because an unchanged calendar wouldn't render at all.
+        with patch.object(plugin_module, "fetch_events", return_value=([{"title": "New"}], 0)), \
                 patch.object(self.plugin, "render_image", return_value=None):
             result = self.plugin.generate_image(self.saved_settings, self.device)
         self.assertTrue(self.has_banner(result))
@@ -182,6 +208,123 @@ class PluginFailureTests(unittest.TestCase):
         self.saved_settings["credentialsContent"] = "not json"
         self.succeed()
         self.assertFalse(self.auth.has_client())
+
+    def refresh(self, events=(), settings=None, now=None):
+        """Runs a scheduled refresh and returns whether it rendered a new image."""
+        settings = settings if settings is not None else self.saved_settings
+        moment = now or plugin_module.pytz.timezone("America/Denver").localize(datetime(2026, 11, 2, 7, 14))
+        clock = MagicMock(wraps=datetime)
+        clock.now.return_value = moment
+        with patch.object(plugin_module, "fetch_events", return_value=(list(events), 0)), \
+                patch.object(plugin_module, "datetime", clock), \
+                patch.object(self.plugin, "render_image", return_value=self.calendar_image) as render:
+            self.last_result = self.plugin.generate_image(settings, self.device)
+        self.last_render = render
+        return render.called
+
+    def date_row_events(self):
+        return [
+            {"title": "Dentist", "start": "2026-11-03T10:00:00", "end": "2026-11-03T11:00:00", "allDay": False, "dateRow": False},
+            {"title": "Tacos", "start": "2026-11-03", "end": "2026-11-04", "allDay": True, "dateRow": True},
+        ]
+
+    def test_a_date_row_calendar_becomes_titles_in_the_two_week_view(self):
+        settings = {"calendarIds[]": ["cal", "meals"], "viewMode": "timeGrid2Week", "calendarColor:meals": "dateRow"}
+        self.refresh(events=self.date_row_events(), settings=settings)
+        params = self.last_render.call_args.args[3]
+        self.assertEqual(params["date_row"], {"2026-11-03": ["Tacos"]})
+        self.assertEqual([event["title"] for event in params["events"]], ["Dentist"])
+
+    def test_other_views_show_date_row_events_as_normal(self):
+        settings = {"calendarIds[]": ["cal", "meals"], "viewMode": "dayGridMonth", "calendarColor:meals": "dateRow"}
+        self.refresh(events=self.date_row_events(), settings=settings)
+        params = self.last_render.call_args.args[3]
+        self.assertIsNone(params["date_row"])
+        self.assertEqual(len(params["events"]), 2)
+
+    def test_no_date_row_calendar_means_no_row(self):
+        self.refresh(events=[self.date_row_events()[0]])
+        self.assertIsNone(self.last_render.call_args.args[3]["date_row"])
+
+    def test_a_date_row_calendar_thats_no_longer_selected_means_no_row(self):
+        settings = {"calendarIds[]": ["cal"], "viewMode": "timeGrid2Week", "calendarColor:meals": "dateRow"}
+        self.refresh(settings=settings)
+        self.assertIsNone(self.last_render.call_args.args[3]["date_row"])
+
+    def test_a_new_dinner_renders_again(self):
+        settings = {"calendarIds[]": ["cal", "meals"], "viewMode": "timeGrid2Week", "calendarColor:meals": "dateRow"}
+        events = self.date_row_events()
+        self.assertTrue(self.refresh(events=events, settings=settings))
+        self.assertFalse(self.refresh(events=events, settings=settings))
+        changed = [events[0], dict(events[1], title="Pizza")]
+        self.assertTrue(self.refresh(events=changed, settings=settings))
+
+    def test_the_stamp_includes_the_date_and_time(self):
+        self.refresh()
+        self.assertEqual(self.last_render.call_args.args[3]["updated"], "Nov 2, 7:14am")
+
+    def test_a_24_hour_device_shows_a_24_hour_stamp(self):
+        config = {"timezone": "America/Denver", "time_format": "24h"}
+        self.device.get_config = lambda key, default=None: config.get(key, default)
+        moment = plugin_module.pytz.timezone("America/Denver").localize(datetime(2026, 11, 2, 19, 5))
+        self.refresh(now=moment)
+        self.assertEqual(self.last_render.call_args.args[3]["updated"], "Nov 2, 19:05")
+
+    def test_unchanged_calendar_reuses_the_image_so_the_panel_wont_redraw(self):
+        tz = plugin_module.pytz.timezone("America/Denver")
+        self.assertTrue(self.refresh(events=[{"title": "A"}]))
+        first = digest(self.last_result)
+        self.assertFalse(self.refresh(events=[{"title": "A"}], now=tz.localize(datetime(2026, 11, 2, 7, 29))))
+        self.assertEqual(digest(self.last_result), first)
+        self.assertFalse(self.refresh(events=[{"title": "A"}], now=tz.localize(datetime(2026, 11, 2, 23, 59))))
+
+    def test_changed_events_render_again(self):
+        self.refresh(events=[{"title": "A"}])
+        self.assertTrue(self.refresh(events=[{"title": "B"}]))
+
+    def test_a_new_day_renders_again(self):
+        tz = plugin_module.pytz.timezone("America/Denver")
+        self.refresh()
+        self.assertTrue(self.refresh(now=tz.localize(datetime(2026, 11, 3, 0, 5))))
+
+    def test_changed_settings_render_again(self):
+        self.refresh()
+        self.saved_settings["calendarColor:cal"] = "green"
+        self.assertTrue(self.refresh())
+
+    def test_changing_the_template_renders_again(self):
+        original = self.plugin.get_plugin_dir
+        self.refresh()
+        with patch.object(self.plugin, "get_plugin_dir", side_effect=lambda path: original(path if "html" not in path else "plugin-info.json")):
+            self.assertTrue(self.refresh())
+
+    def test_a_view_with_a_time_line_renders_again_each_hour(self):
+        tz = plugin_module.pytz.timezone("America/Denver")
+        settings = self.saved_settings
+        settings["viewMode"] = "timeGridDay"
+        self.refresh()
+        self.assertFalse(self.refresh(now=tz.localize(datetime(2026, 11, 2, 7, 45))))
+        self.assertTrue(self.refresh(now=tz.localize(datetime(2026, 11, 2, 8, 0))))
+
+    def test_reusing_the_image_counts_as_a_successful_refresh(self):
+        # Otherwise a calendar that rarely changes would look like a long outage.
+        self.refresh()
+        self.age_last_image(4 * 60 * 60)
+        self.refresh()
+        result = self.fail_with(RuntimeError("Could not reach Google"))
+        self.assertFalse(self.has_banner(result))
+
+    def test_a_missing_or_corrupt_saved_image_renders_again(self):
+        self.refresh()
+        with open(os.path.join(self.auth.state_dir, "last_image.png"), "wb") as file:
+            file.write(b"not an image")
+        self.assertTrue(self.refresh())
+
+    def test_a_corrupt_saved_key_renders_again(self):
+        self.refresh()
+        with open(os.path.join(self.auth.state_dir, "last_image.json"), "w", encoding="utf-8") as file:
+            file.write("not json")
+        self.assertTrue(self.refresh())
 
     def test_chosen_calendar_colours_reach_the_fetch(self):
         settings = {"calendarIds[]": ["a@b"], "calendarColor:a@b": "green", "calendarColor:c@d": "bogus"}

@@ -104,7 +104,7 @@ sudo systemctl restart inkypi
 
 **InkyPi's `update.sh` puts 2.4.0 back,** so repeat this after every update.
 
-**Inky Driver Saturation** in **Settings** changes how colours are dithered. Upstream's docs suggest trying 0, but on this panel 0.5 looked better to my eye, so compare both on your own panel.
+**Inky Driver Saturation** in **Settings** changes how colours are dithered. Upstream's docs suggest trying 0, but on this panel 0.5 looked better to my eye, so compare both on your own panel. Higher values bring the web preview closer to the panel's real colours, but in simulation thin black lines and text start to speckle above about 0.6.
 
 ## 5. Install this plugin
 
@@ -156,6 +156,7 @@ Clicking **Update Now** is a one-off. For automatic updates:
 The panel has six inks plus a mixed orange, and the plugin's settings page shows what's available:
 
 - **Beside each calendar** is the panel colour its events get when they have no colour of their own. It's suggested from the calendar's Google colour, and you can choose a different one from the list. That only affects the panel, not your Google Calendar. On a saved entry, click **Save** afterwards.
+- **Under the date**, at the bottom of that list, shows a calendar's event titles in a plain row under each date instead of boxes, which suits something like a dinner plan. It only applies to the 2 Weeks layout, and other layouts show those events as normal.
 - **Panel colours** lists which Google event colours produce each panel colour. For example, Tangerine becomes orange, and both Tomato and Flamingo become red.
 
 - **The note beside each panel colour** is a reminder for you, such as who that colour is for. Notes are saved with the entry and don't appear on the panel.
@@ -167,7 +168,7 @@ Pale or grey calendar colours are worth checking. A grey calendar is suggested a
 ## What to watch afterwards
 
 - **A red warning across the bottom** means a scheduled refresh failed and the panel is showing your last good calendar. It appears straight away for problems that need you, and after 3 hours for passing ones like a Wi-Fi drop.
-- **The "Updated" date on the panel** is your health check when no warning can appear, because the panel keeps its last image even if the Pi has crashed or lost power. If this date falls behind with no warning, the Pi itself has probably stopped.
+- **The "Updated" stamp on the panel** is your health check when no warning can appear, because the panel keeps its last image even if the Pi has crashed or lost power. It shows when the calendar last changed, not when it last checked Google, so an old time on today's date is normal. It's a problem if the date is earlier than today, because the plugin redraws at least once a day, so the Pi itself has probably stopped.
 - **Freezes:** the Zero 2 W has a history of locking up after hours or days, with the green LED blinking nonstop or SSH not answering. Upstream's memory fixes and `earlyoom` improved this, but watch it for the first few days.
 - **Part of the panel not updating:** one user fixed this by unplugging it for about 10 minutes. Also check that the header is seated.
 

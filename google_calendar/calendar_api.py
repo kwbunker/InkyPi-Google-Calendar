@@ -34,9 +34,9 @@ INKY_COLORS = {
     "orange": "#FF8000",
 }
 
-# Roughly how each colour looks on the panel, for the settings page. These come from the
-# measured palette in Pimoroni's driver for this panel. Orange is an average of its red and
-# yellow, and white is lighter than measured so it still reads as white on a screen.
+# Roughly how each colour looks on the panel, for the settings page and ink_colors. These
+# come from the measured palette in Pimoroni's driver for this panel. Orange is an average of
+# its red and yellow, and white is lighter than measured so it still reads as white on a screen.
 PANEL_APPEARANCE = {
     "black": "#000000",
     "white": "#f0f0f0",
@@ -64,6 +64,9 @@ EVENT_COLORS = {
 
 # Settings page fields holding the panel colour chosen for a calendar, followed by its ID.
 CALENDAR_COLOR_PREFIX = "calendarColor:"
+
+# The choice in those fields for showing a calendar as titles under each date, not boxes.
+DATE_ROW = "dateRow"
 
 # A scheduled refresh that fails for a passing reason, like a Wi-Fi drop, keeps showing the
 # last calendar untouched for this long before warning on the panel.
@@ -288,22 +291,23 @@ class CalendarClient:
 
 
 def chosen_calendar_colors(settings):
-    """The panel colours chosen on the settings page, by calendar ID."""
+    """The panel colours, or DATE_ROW, chosen on the settings page, by calendar ID."""
     return {
         key[len(CALENDAR_COLOR_PREFIX):]: value
         for key, value in settings.items()
-        if key.startswith(CALENDAR_COLOR_PREFIX) and value in INKY_COLORS
+        if key.startswith(CALENDAR_COLOR_PREFIX) and (value in INKY_COLORS or value == DATE_ROW)
     }
 
 
-def fetch_events(client, calendar_ids, tz, start, end, chosen_colors=None):
+def fetch_events(client, calendar_ids, tz, start, end, chosen_colors=None, palette=INKY_COLORS):
     """Returns FullCalendar events and how many calendars failed. All failing raises."""
     calendars = {calendar["id"]: calendar for calendar in client.list_calendars()}
     chosen_colors = chosen_colors or {}
     events = []
     failures = 0
     for calendar_id in calendar_ids:
-        default_color = chosen_colors.get(calendar_id) or palette_name_for_hex(calendars.get(calendar_id, {}).get("backgroundColor"))
+        chosen = chosen_colors.get(calendar_id)
+        default_color = chosen if chosen in INKY_COLORS else palette_name_for_hex(calendars.get(calendar_id, {}).get("backgroundColor"))
         try:
             items = client.list_events(calendar_id, start, end)
         except AuthRequired:
@@ -312,14 +316,35 @@ def fetch_events(client, calendar_ids, tz, start, end, chosen_colors=None):
             logger.warning(f"Could not read a calendar: {error}")
             failures += 1
             continue
-        events.extend(
-            to_fullcalendar_event(item, default_color, tz)
-            for item in items
-            if item.get("status") != "cancelled"
-        )
+        for item in items:
+            if item.get("status") != "cancelled":
+                event = to_fullcalendar_event(item, default_color, tz, palette)
+                event["dateRow"] = chosen == DATE_ROW
+                events.append(event)
     if failures and failures == len(calendar_ids):
         raise RuntimeError("Could not read any of the selected calendars. Check the logs.")
     return events, failures
+
+
+def split_date_row(events):
+    """Separates the events shown as boxes from the titles shown under each date, by date."""
+    boxes = [event for event in events if not event.get("dateRow")]
+    titles = {}
+    for event in events:
+        if event.get("dateRow"):
+            for day in _event_days(event):
+                titles.setdefault(day, []).append(event["title"])
+    return boxes, titles
+
+
+def _event_days(event):
+    first = datetime.fromisoformat(event["start"][:10]).date()
+    # A timed event belongs to the day it starts, even if it runs past midnight.
+    if not event["allDay"]:
+        return [first.isoformat()]
+    # All-day end dates are exclusive.
+    days = (datetime.fromisoformat(event["end"][:10]).date() - first).days
+    return [(first + timedelta(days=offset)).isoformat() for offset in range(max(days, 1))]
 
 
 def should_warn(error, seconds_since_success):
@@ -363,9 +388,26 @@ def panel_color(name):
     }
 
 
-def to_fullcalendar_event(item, default_color, tz):
+def ink_colors(saturation):
+    """Each colour as the driver's palette has it at this saturation, for drawing events.
+
+    The driver matches images against a blend of pure colours and the panel's measured inks.
+    Drawing with that same blend keeps every colour on solid ink, and brings InkyPi's web
+    preview closer to the panel. A saturation of 1 makes the preview match the measured inks.
+    """
+    saturation = float(saturation)
+
+    def blended(name):
+        pairs = zip(_rgb(INKY_COLORS[name]), _rgb(PANEL_APPEARANCE[name]))
+        # int() rounds as the driver does, so these are its exact values.
+        return "#%02x%02x%02x" % tuple(int(saturation * measured + (1 - saturation) * pure) for pure, measured in pairs)
+
+    return {name: pure if name in ("black", "white") else blended(name) for name, pure in INKY_COLORS.items()}
+
+
+def to_fullcalendar_event(item, default_color, tz, palette=INKY_COLORS):
     event_color = EVENT_COLORS.get(item.get("colorId"))
-    background = INKY_COLORS[event_color["panel"] if event_color else default_color]
+    color = event_color["panel"] if event_color else default_color
     all_day = "date" in item["start"]
     if all_day:
         # Google and FullCalendar both treat an all-day event's end date as exclusive.
@@ -378,8 +420,8 @@ def to_fullcalendar_event(item, default_color, tz):
         "start": start,
         "end": end,
         "allDay": all_day,
-        "backgroundColor": background,
-        "textColor": contrast_color(background),
+        "backgroundColor": palette[color],
+        "textColor": contrast_color(INKY_COLORS[color]),
         "description": item.get("description", ""),
         "location": item.get("location", ""),
     }
@@ -412,9 +454,13 @@ def palette_name_for_hex(hex_color, fallback="blue"):
     return "blue"
 
 
-def contrast_color(hex_color):
+def _rgb(hex_color):
     value = hex_color.lstrip("#")
-    red, green, blue = (int(value[i:i + 2], 16) for i in (0, 2, 4))
+    return tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def contrast_color(hex_color):
+    red, green, blue = _rgb(hex_color)
     return "#000000" if (red * 299 + green * 587 + blue * 114) / 1000 >= 150 else "#ffffff"
 
 
