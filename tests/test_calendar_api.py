@@ -142,13 +142,31 @@ class EventConversionTests(unittest.TestCase):
 
 class ColourTests(unittest.TestCase):
     def test_hue_mapping_agrees_with_every_google_event_colour(self):
-        # Hex values from Google's colors.get endpoint.
-        google_event_hex = {
-            "1": "#a4bdfc", "2": "#7ae7bf", "3": "#dbadff", "4": "#ff887c", "5": "#fbd75b", "6": "#ffb878",
-            "7": "#46d6db", "8": "#e1e1e1", "9": "#5484ed", "10": "#51b749", "11": "#dc2127",
-        }
-        for color_id, hex_color in google_event_hex.items():
-            self.assertEqual(palette_name_for_hex(hex_color), calendar_api.EVENT_COLORS[color_id], color_id)
+        for color_id, color in calendar_api.EVENT_COLORS.items():
+            self.assertEqual(palette_name_for_hex(color["hex"]), color["panel"], color_id)
+
+    def test_guide_lists_every_panel_colour_and_every_google_colour_once(self):
+        guide = calendar_api.color_guide()
+        self.assertEqual({row["name"].lower() for row in guide}, set(calendar_api.INKY_COLORS))
+        listed = [google["name"] for row in guide for google in row["google"]]
+        self.assertEqual(sorted(listed), sorted(color["name"] for color in calendar_api.EVENT_COLORS.values()))
+
+    def test_guide_matches_the_colour_events_actually_get(self):
+        for row in calendar_api.color_guide():
+            for color_id, color in calendar_api.EVENT_COLORS.items():
+                if color in row["google"]:
+                    event = to_fullcalendar_event({
+                        "colorId": color_id,
+                        "start": {"date": "2025-10-21"},
+                        "end": {"date": "2025-10-22"},
+                    }, "blue", DENVER)
+                    self.assertEqual(event["backgroundColor"], row["hex"], color["name"])
+                    self.assertEqual(event["textColor"], row["text"], color["name"])
+
+    def test_guide_explains_the_colours_with_no_simple_match(self):
+        notes = {row["name"]: row["note"] for row in calendar_api.color_guide()}
+        self.assertIn("grainy", notes["Orange"])
+        self.assertIn("No Google", notes["Black"])
 
     def test_pale_calendar_colours_keep_their_hue(self):
         self.assertEqual(palette_name_for_hex("#9a9cff"), "blue")
@@ -358,8 +376,9 @@ class FetchEventsTests(AuthTestCase):
             "red-cal": FakeResponse(200, {"items": [self.event]}),
         }
         with patch("calendar_api.requests.request", side_effect=self.respond(routes)):
-            events = fetch_events(CalendarClient(self.auth), ["green-cal", "red-cal"], DENVER, self.start, self.end)
+            events, failures = fetch_events(CalendarClient(self.auth), ["green-cal", "red-cal"], DENVER, self.start, self.end)
         self.assertEqual([event["backgroundColor"] for event in events], ["#00FF00", "#FF0000"])
+        self.assertEqual(failures, 0)
 
     def test_one_failing_calendar_doesnt_lose_the_others(self):
         routes = {
@@ -368,8 +387,9 @@ class FetchEventsTests(AuthTestCase):
             "bad-cal": FakeResponse(404, {"error": {"message": "Not Found"}}),
         }
         with patch("calendar_api.requests.request", side_effect=self.respond(routes)):
-            events = fetch_events(CalendarClient(self.auth), ["bad-cal", "good-cal"], DENVER, self.start, self.end)
+            events, failures = fetch_events(CalendarClient(self.auth), ["bad-cal", "good-cal"], DENVER, self.start, self.end)
         self.assertEqual(len(events), 1)
+        self.assertEqual(failures, 1)
 
     def test_all_calendars_failing_raises(self):
         routes = {
@@ -386,8 +406,31 @@ class FetchEventsTests(AuthTestCase):
             "cal": FakeResponse(200, {"items": [dict(self.event, status="cancelled"), self.event]}),
         }
         with patch("calendar_api.requests.request", side_effect=self.respond(routes)):
-            events = fetch_events(CalendarClient(self.auth), ["cal"], DENVER, self.start, self.end)
+            events, _ = fetch_events(CalendarClient(self.auth), ["cal"], DENVER, self.start, self.end)
         self.assertEqual(len(events), 1)
+
+
+class FailureDecisionTests(unittest.TestCase):
+    def test_a_passing_failure_waits_out_the_grace_period(self):
+        error = RuntimeError("Could not reach Google")
+        self.assertFalse(calendar_api.should_warn(error, 0))
+        self.assertFalse(calendar_api.should_warn(error, calendar_api.WARNING_GRACE_SECONDS - 1))
+        self.assertTrue(calendar_api.should_warn(error, calendar_api.WARNING_GRACE_SECONDS))
+
+    def test_a_failure_that_needs_a_person_warns_straight_away(self):
+        self.assertTrue(calendar_api.should_warn(calendar_api.SetupRequired("No calendars"), 0))
+        self.assertTrue(calendar_api.should_warn(AuthRequired("Sign in again"), 0))
+
+    def test_with_no_earlier_success_there_is_nothing_to_keep_showing(self):
+        self.assertTrue(calendar_api.should_warn(RuntimeError("Could not reach Google"), None))
+
+    def test_messages_are_short_and_say_what_to_do(self):
+        expired = AuthRequired("A long message about Testing mode and 7 days.")
+        self.assertIn("Sign in again", calendar_api.warning_message(expired))
+        self.assertNotIn("Testing mode", calendar_api.warning_message(expired))
+        self.assertEqual(calendar_api.warning_message(calendar_api.SetupRequired("Choose some.")), "Choose some.")
+        self.assertIn("Wi-Fi", calendar_api.warning_message(RuntimeError("HTTP 500 with secrets?")))
+        self.assertNotIn("secrets", calendar_api.warning_message(RuntimeError("HTTP 500 with secrets?")))
 
 
 if __name__ == "__main__":

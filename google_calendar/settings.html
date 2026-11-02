@@ -36,7 +36,7 @@
 </div>
 
 {% if signed_in %}
-<div class="form-group">
+<div class="form-group gcal-stack">
   <label class="form-label">Calendars:</label>
   {% if calendar_error %}
     <div class="gcal-message">{{ calendar_error }}</div>
@@ -46,10 +46,28 @@
       <input type="checkbox" name="calendarIds[]" value="{{ calendar.id }}" id="calendar_{{ loop.index }}" data-primary="{{ 'true' if calendar.primary else 'false' }}">
       <span class="gcal-swatch" style="background-color: {{ calendar.backgroundColor }}"></span>
       <label for="calendar_{{ loop.index }}">{{ calendar.summary }}</label>
+      <span class="gcal-arrow" aria-hidden="true">&rarr;</span>
+      <span class="gcal-chip" style="background-color: {{ calendar.panel.appearance }}; color: {{ calendar.panel.text }}" title="Panel colour for this calendar's events that have no colour of their own">{{ calendar.panel.name }}</span>
     </div>
   {% endfor %}
   <div class="gcal-message" id="gcalNoneSelected" style="display: none;">Select at least one calendar, or this instance can't update the display.</div>
-  <small class="form-info">Each event uses its own colour from Google Calendar. Events with no colour of their own use the closest panel colour to their calendar's colour.</small>
+  <small class="gcal-note">Beside each calendar is the panel colour its events get if they have no colour of their own.</small>
+</div>
+
+<div class="form-group gcal-stack">
+  <label class="form-label">Panel colours:</label>
+  <small class="gcal-note">To get a colour on the panel, give the event one of these colours in Google Calendar. An event's own colour always wins over its calendar's. The labels here roughly match how each colour looks on the panel.</small>
+  {% for color in color_guide %}
+    <div class="gcal-guide-row">
+      <span class="gcal-chip" style="background-color: {{ color.appearance }}; color: {{ color.text }}">{{ color.name }}</span>
+      <span class="gcal-guide-detail">
+        {% for google in color.google %}
+          <span class="gcal-google-color"><span class="gcal-swatch" style="background-color: {{ google.hex }}"></span>{{ google.name }}</span>
+        {% endfor %}
+        {% if color.note %}<small class="gcal-note">{{ color.note }}</small>{% endif %}
+      </span>
+    </div>
+  {% endfor %}
 </div>
 {% endif %}
 
@@ -148,34 +166,85 @@
 </div>
 
 <style>
+#gcalSettings details,
+#gcalSettings summary {
+    color: var(--text-primary);
+}
+
 .gcal-message {
     margin-bottom: 10px;
     padding: 10px;
-    border: 1px solid currentColor;
+    border: 1px solid var(--border-light);
     border-radius: 4px;
+    color: var(--text-primary);
 }
 
 .gcal-message ol {
     margin: 8px 0 0 20px;
 }
 
+.gcal-message a {
+    color: inherit;
+    text-decoration: underline;
+}
+
 .gcal-ok {
     border-color: #2e7d32;
 }
 
-.gcal-calendar {
+.gcal-stack {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.gcal-note {
+    color: var(--text-secondary);
+}
+
+.gcal-calendar,
+.gcal-guide-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     margin: 6px 0;
+    color: var(--text-primary);
+}
+
+.gcal-arrow {
+    color: var(--text-secondary);
 }
 
 .gcal-swatch {
     flex-shrink: 0;
     width: 16px;
     height: 16px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-light);
     border-radius: 50%;
+}
+
+.gcal-chip {
+    flex-shrink: 0;
+    min-width: 70px;
+    padding: 2px 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.gcal-guide-detail {
+    display: flex;
+    align-items: center;
+    flex: 1 1 200px;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+}
+
+.gcal-google-color {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 </style>
 

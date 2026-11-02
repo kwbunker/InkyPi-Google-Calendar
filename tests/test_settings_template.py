@@ -1,10 +1,14 @@
 """Renders the settings page in each sign-in state. Needs jinja2, which InkyPi installs."""
 import os
+import sys
 import unittest
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 PLUGIN_DIR = os.path.join(os.path.dirname(__file__), "..", "google_calendar")
+sys.path.insert(0, PLUGIN_DIR)
+
+import calendar_api  # noqa: E402
 
 
 def render(**params):
@@ -16,6 +20,7 @@ def render(**params):
         "available_calendars": [],
         "calendar_error": None,
         "locale_map": {"en": "English"},
+        "color_guide": calendar_api.color_guide(),
     }
     return env.get_template("settings.html").render({**defaults, **params})
 
@@ -34,9 +39,33 @@ class SettingsTemplateTests(unittest.TestCase):
         self.assertIn('name="authResponse"', html)
         self.assertIn("Use a different credentials file", html)
 
+    def test_each_calendar_shows_its_panel_colour(self):
+        html = render(signed_in=True, has_client=True, available_calendars=[
+            {"id": "a", "summary": "Meals", "backgroundColor": "#cabdbf", "panel": calendar_api.panel_color("white")},
+            {"id": "b", "summary": "Home", "backgroundColor": "#ffad46", "panel": calendar_api.panel_color("orange")},
+        ])
+        self.assertIn('background-color: #f0f0f0; color: #000000" title="Panel colour', html)
+        self.assertIn('background-color: #b68349; color: #000000" title="Panel colour', html)
+
+    def test_colour_guide_lists_each_panel_colour_and_its_google_colours(self):
+        html = render(signed_in=True, has_client=True)
+        for name in ("Red", "Orange", "Yellow", "Green", "Blue", "White", "Black", "Tomato", "Tangerine", "Graphite"):
+            self.assertIn(name, html)
+        self.assertIn("looks grainy", html)
+        self.assertLess(html.index(">Tomato") if ">Tomato" in html else html.index("Tomato"), html.index("Banana"))
+
+    def test_colour_guide_waits_until_signed_in(self):
+        self.assertNotIn("Panel colours:", render())
+
+    def test_page_text_follows_the_dark_mode_theme(self):
+        html = render(signed_in=True, has_client=True)
+        self.assertIn("#gcalSettings summary", html)
+        self.assertIn("color: var(--text-primary);", html)
+        self.assertNotIn("currentColor", html)
+
     def test_signed_in_lists_calendars_with_names_escaped(self):
         html = render(signed_in=True, has_client=True, available_calendars=[
-            {"id": "a@b", "summary": "<Family> & Co", "backgroundColor": "#123456", "primary": True},
+            {"id": "a@b", "summary": "<Family> & Co", "backgroundColor": "#123456", "primary": True, "panel": calendar_api.panel_color("blue")},
         ])
         self.assertIn("Signed in to Google Calendar", html)
         self.assertIn("&lt;Family&gt; &amp; Co", html)

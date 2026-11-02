@@ -34,23 +34,44 @@ INKY_COLORS = {
     "orange": "#FF8000",
 }
 
-# Google's fixed per-event colours (colorId), mapped to the panel's colours.
-EVENT_COLORS = {
-    "1": "blue",     # Lavender
-    "2": "green",    # Sage
-    "3": "blue",     # Grape
-    "4": "red",      # Flamingo
-    "5": "yellow",   # Banana
-    "6": "orange",   # Tangerine
-    "7": "blue",     # Peacock
-    "8": "white",    # Graphite
-    "9": "blue",     # Blueberry
-    "10": "green",   # Basil
-    "11": "red",     # Tomato
+# Roughly how each colour looks on the panel, for the settings page. These come from the
+# measured palette in Pimoroni's driver for this panel. Orange is an average of its red and
+# yellow, and white is lighter than measured so it still reads as white on a screen.
+PANEL_APPEARANCE = {
+    "black": "#000000",
+    "white": "#f0f0f0",
+    "red": "#9c484b",
+    "yellow": "#d0be47",
+    "green": "#3a5b46",
+    "blue": "#3d3b5e",
+    "orange": "#b68349",
 }
 
+# Google's fixed per-event colours (colorId), and the panel colour each one becomes.
+EVENT_COLORS = {
+    "1": {"name": "Lavender", "hex": "#a4bdfc", "panel": "blue"},
+    "2": {"name": "Sage", "hex": "#7ae7bf", "panel": "green"},
+    "3": {"name": "Grape", "hex": "#dbadff", "panel": "blue"},
+    "4": {"name": "Flamingo", "hex": "#ff887c", "panel": "red"},
+    "5": {"name": "Banana", "hex": "#fbd75b", "panel": "yellow"},
+    "6": {"name": "Tangerine", "hex": "#ffb878", "panel": "orange"},
+    "7": {"name": "Peacock", "hex": "#46d6db", "panel": "blue"},
+    "8": {"name": "Graphite", "hex": "#e1e1e1", "panel": "white"},
+    "9": {"name": "Blueberry", "hex": "#5484ed", "panel": "blue"},
+    "10": {"name": "Basil", "hex": "#51b749", "panel": "green"},
+    "11": {"name": "Tomato", "hex": "#dc2127", "panel": "red"},
+}
 
-class AuthRequired(RuntimeError):
+# A scheduled refresh that fails for a passing reason, like a Wi-Fi drop, keeps showing the
+# last calendar untouched for this long before warning on the panel.
+WARNING_GRACE_SECONDS = 3 * 60 * 60
+
+
+class SetupRequired(RuntimeError):
+    """The calendar can't update until someone changes a setting, so waiting won't help."""
+
+
+class AuthRequired(SetupRequired):
     """The user needs to sign in, or sign in again, from the plugin's settings page."""
 
 
@@ -264,7 +285,7 @@ class CalendarClient:
 
 
 def fetch_events(client, calendar_ids, tz, start, end):
-    """Returns events for FullCalendar. One failing calendar is logged; all failing raises."""
+    """Returns FullCalendar events and how many calendars failed. All failing raises."""
     calendars = {calendar["id"]: calendar for calendar in client.list_calendars()}
     events = []
     failures = 0
@@ -285,11 +306,52 @@ def fetch_events(client, calendar_ids, tz, start, end):
         )
     if failures and failures == len(calendar_ids):
         raise RuntimeError("Could not read any of the selected calendars. Check the logs.")
-    return events
+    return events, failures
+
+
+def should_warn(error, seconds_since_success):
+    """Whether a failed scheduled refresh should say so on the panel yet."""
+    if isinstance(error, SetupRequired) or seconds_since_success is None:
+        return True
+    return seconds_since_success >= WARNING_GRACE_SECONDS
+
+
+def warning_message(error):
+    if isinstance(error, AuthRequired):
+        return "Google sign-in has expired. Sign in again on this plugin's settings page."
+    if isinstance(error, SetupRequired):
+        return str(error)
+    return "Can't get new events from Google. Check the Wi-Fi and InkyPi's logs."
+
+
+def color_guide():
+    """The panel's colours, each with the Google event colours that produce it."""
+    notes = {
+        "orange": "The panel mixes this from red and yellow, so it looks grainy up close.",
+        "black": "No Google event colour becomes black.",
+    }
+    return [
+        {
+            **panel_color(name),
+            "google": [color for color in EVENT_COLORS.values() if color["panel"] == name],
+            "note": notes.get(name, ""),
+        }
+        for name in ("red", "orange", "yellow", "green", "blue", "white", "black")
+    ]
+
+
+def panel_color(name):
+    return {
+        "name": name.capitalize(),
+        "hex": INKY_COLORS[name],
+        "appearance": PANEL_APPEARANCE[name],
+        "text": contrast_color(INKY_COLORS[name]),
+    }
 
 
 def to_fullcalendar_event(item, default_color, tz):
-    background = INKY_COLORS[EVENT_COLORS.get(item.get("colorId"), default_color)]
+    event_color = EVENT_COLORS.get(item.get("colorId"))
+    background = INKY_COLORS[event_color["panel"] if event_color else default_color]
     all_day = "date" in item["start"]
     if all_day:
         # Google and FullCalendar both treat an all-day event's end date as exclusive.

@@ -149,9 +149,19 @@ Clicking **Update Now** is a one-off. For automatic updates:
 
 **If the playlist entry never updates,** open it from **Playlists** and check that your calendars are still selected. InkyPi resets the form after **Add to Playlist**, even when adding failed. Plugin versions before this guide let a retry save no calendars, Afrikaans as the language, and the smallest font. This is fixed now, but entries saved that way need fixing and saving again.
 
+## Choosing colours
+
+The panel has six inks plus a mixed orange, and the plugin's settings page shows what's available:
+
+- **Beside each calendar** is the panel colour its events get when they have no colour of their own.
+- **Panel colours** lists which Google event colours produce each panel colour. For example, Tangerine becomes orange, and both Tomato and Flamingo become red.
+
+Pale or grey calendar colours are worth checking. A grey calendar becomes white, so its events show as plain white boxes. To tell categories apart on the panel, give them Google colours that land on different panel colours, because several Google colours share one panel colour.
+
 ## What to watch afterwards
 
-- **The "Updated" date on the panel** is your health check. An e-ink panel keeps its last image with no power at all, so if this date falls behind, something has stopped.
+- **A red warning across the bottom** means a scheduled refresh failed and the panel is showing your last good calendar. It appears straight away for problems that need you, and after 3 hours for passing ones like a Wi-Fi drop.
+- **The "Updated" date on the panel** is your health check when no warning can appear, because the panel keeps its last image even if the Pi has crashed or lost power. If this date falls behind with no warning, the Pi itself has probably stopped.
 - **Freezes:** the Zero 2 W has a history of locking up after hours or days, with the green LED blinking nonstop or SSH not answering. Upstream's memory fixes and `earlyoom` improved this, but watch it for the first few days.
 - **Part of the panel not updating:** one user fixed this by unplugging it for about 10 minutes. Also check that the header is seated.
 
@@ -168,4 +178,7 @@ Clicking **Update Now** is a one-off. For automatic updates:
 | **Publish app** is greyed out | The home page or privacy policy link is missing | Fill them in on the Branding page |
 | Signed out after about a week | The app is still in Testing mode | Publish to Production, then sign in again |
 | Sign-in link shows `invalid_client` | The new client hasn't taken effect yet | Wait a while and try again |
-| Playlist never updates and the log says `Select at least one calendar` | Entry saved before the form-reset fix | Reselect your calendars, check the language and font, and save |
+| Red warning says no calendars are selected | Entry saved before the form-reset fix | Open it under **Playlists**, reselect your calendars, check the language and font, and save |
+| Red warning says Google sign-in has expired | The app is in Testing mode, or access was revoked | Publish to Production if needed, then sign in again on the plugin's settings page |
+| Red warning says it can't get new events | Wi-Fi or Google has been unreachable for over 3 hours, or something else failed | Check the Wi-Fi and `journalctl -u inkypi` |
+| "Updated" text says some calendars failed | One calendar can't be read, for example it was deleted or unshared | Check the log, and update your selection |
