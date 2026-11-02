@@ -62,6 +62,9 @@ EVENT_COLORS = {
     "11": {"name": "Tomato", "hex": "#dc2127", "panel": "red"},
 }
 
+# Settings page fields holding the panel colour chosen for a calendar, followed by its ID.
+CALENDAR_COLOR_PREFIX = "calendarColor:"
+
 # A scheduled refresh that fails for a passing reason, like a Wi-Fi drop, keeps showing the
 # last calendar untouched for this long before warning on the panel.
 WARNING_GRACE_SECONDS = 3 * 60 * 60
@@ -284,13 +287,23 @@ class CalendarClient:
         })
 
 
-def fetch_events(client, calendar_ids, tz, start, end):
+def chosen_calendar_colors(settings):
+    """The panel colours chosen on the settings page, by calendar ID."""
+    return {
+        key[len(CALENDAR_COLOR_PREFIX):]: value
+        for key, value in settings.items()
+        if key.startswith(CALENDAR_COLOR_PREFIX) and value in INKY_COLORS
+    }
+
+
+def fetch_events(client, calendar_ids, tz, start, end, chosen_colors=None):
     """Returns FullCalendar events and how many calendars failed. All failing raises."""
     calendars = {calendar["id"]: calendar for calendar in client.list_calendars()}
+    chosen_colors = chosen_colors or {}
     events = []
     failures = 0
     for calendar_id in calendar_ids:
-        default_color = palette_name_for_hex(calendars.get(calendar_id, {}).get("backgroundColor"))
+        default_color = chosen_colors.get(calendar_id) or palette_name_for_hex(calendars.get(calendar_id, {}).get("backgroundColor"))
         try:
             items = client.list_events(calendar_id, start, end)
         except AuthRequired:
@@ -328,7 +341,7 @@ def color_guide():
     """The panel's colours, each with the Google event colours that produce it."""
     notes = {
         "orange": "The panel mixes this from red and yellow, so it looks grainy up close.",
-        "black": "No Google event colour becomes black.",
+        "black": "No Google event colour becomes black, but you can choose it for a calendar above.",
     }
     return [
         {
@@ -342,6 +355,7 @@ def color_guide():
 
 def panel_color(name):
     return {
+        "key": name,
         "name": name.capitalize(),
         "hex": INKY_COLORS[name],
         "appearance": PANEL_APPEARANCE[name],

@@ -155,10 +155,14 @@ Clicking **Update Now** is a one-off. For automatic updates:
 
 The panel has six inks plus a mixed orange, and the plugin's settings page shows what's available:
 
-- **Beside each calendar** is the panel colour its events get when they have no colour of their own.
+- **Beside each calendar** is the panel colour its events get when they have no colour of their own. It's suggested from the calendar's Google colour, and you can choose a different one from the list. That only affects the panel, not your Google Calendar. On a saved entry, click **Save** afterwards.
 - **Panel colours** lists which Google event colours produce each panel colour. For example, Tangerine becomes orange, and both Tomato and Flamingo become red.
 
-Pale or grey calendar colours are worth checking. A grey calendar becomes white, so its events show as plain white boxes. To tell categories apart on the panel, give them Google colours that land on different panel colours, because several Google colours share one panel colour.
+- **The note beside each panel colour** is a reminder for you, such as who that colour is for. Notes are saved with the entry and don't appear on the panel.
+
+Pale or grey calendar colours are worth checking. A grey calendar is suggested as white, so its events show as plain white boxes unless you choose something else. An event's own colour always wins over its calendar's.
+
+**Colour-coding by person or category:** events can only get a colour through Google's event colours, which give six distinct results on the panel: red, orange, yellow, green, blue and white. Black can only be a calendar's colour. Several Google colours share one panel colour, so pick one Google colour per person. For example, Tomato and Flamingo look different in Google Calendar but are both red on the panel. If yellow is your calendar's default, that leaves five for people.
 
 ## What to watch afterwards
 

@@ -183,6 +183,13 @@ class PluginFailureTests(unittest.TestCase):
         self.succeed()
         self.assertFalse(self.auth.has_client())
 
+    def test_chosen_calendar_colours_reach_the_fetch(self):
+        settings = {"calendarIds[]": ["a@b"], "calendarColor:a@b": "green", "calendarColor:c@d": "bogus"}
+        with patch.object(plugin_module, "fetch_events", return_value=([], 0)) as fetch, \
+                patch.object(self.plugin, "render_image", return_value=self.calendar_image):
+            self.plugin.generate_image(settings, self.device)
+        self.assertEqual(fetch.call_args.args[5], {"a@b": "green"})
+
     def test_one_failed_calendar_is_noted_beside_the_updated_date(self):
         with patch.object(plugin_module, "fetch_events", return_value=([], 1)), \
                 patch.object(self.plugin, "render_image", return_value=self.calendar_image) as render:

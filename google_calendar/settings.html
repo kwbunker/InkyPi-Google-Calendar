@@ -53,18 +53,25 @@
       <label for="calendar_{{ loop.index }}">{{ calendar.summary }}</label>
       <span class="gcal-arrow" aria-hidden="true">&rarr;</span>
       <span class="gcal-chip" style="background-color: {{ calendar.panel.appearance }}; color: {{ calendar.panel.text }}" title="Panel colour for this calendar's events that have no colour of their own">{{ calendar.panel.name }}</span>
+      <select name="calendarColor:{{ calendar.id }}" class="form-input gcal-color-select" aria-label="Panel colour for {{ calendar.summary }}" onchange="showChosenColor(this)">
+        <option value="" data-name="{{ calendar.panel.name }}" data-appearance="{{ calendar.panel.appearance }}" data-text="{{ calendar.panel.text }}">Suggested ({{ calendar.panel.name }})</option>
+        {% for color in color_guide %}
+          <option value="{{ color.key }}" data-name="{{ color.name }}" data-appearance="{{ color.appearance }}" data-text="{{ color.text }}">{{ color.name }}</option>
+        {% endfor %}
+      </select>
     </div>
   {% endfor %}
   <div class="gcal-message" id="gcalNoneSelected" style="display: none;">Select at least one calendar, or this instance can't update the display.</div>
-  <small class="gcal-note">Beside each calendar is the panel colour its events get if they have no colour of their own.</small>
+  <small class="gcal-note">Beside each calendar is the panel colour its events get if they have no colour of their own. Changing it here only affects the panel, not your Google Calendar.</small>
 </div>
 
 <div class="form-group gcal-stack">
   <label class="form-label">Panel colours:</label>
-  <small class="gcal-note">To get a colour on the panel, give the event one of these colours in Google Calendar. An event's own colour always wins over its calendar's. The labels here roughly match how each colour looks on the panel.</small>
+  <small class="gcal-note">To get a colour on the panel, give the event one of these colours in Google Calendar. An event's own colour always wins over its calendar's. The labels here roughly match how each colour looks on the panel. Notes are reminders for you, such as who each colour is for. They're saved with this entry and don't appear on the panel.</small>
   {% for color in color_guide %}
     <div class="gcal-guide-row">
       <span class="gcal-chip" style="background-color: {{ color.appearance }}; color: {{ color.text }}">{{ color.name }}</span>
+      <input type="text" name="colorNote:{{ color.key }}" class="form-input gcal-color-note" maxlength="40" placeholder="Note" aria-label="Note for {{ color.name }}" autocomplete="off">
       <span class="gcal-guide-detail">
         {% for google in color.google %}
           <span class="gcal-google-color"><span class="gcal-swatch" style="background-color: {{ google.hex }}"></span>{{ google.name }}</span>
@@ -238,6 +245,21 @@
     text-align: center;
 }
 
+#gcalSettings .gcal-color-select {
+    flex: 0 0 auto;
+    width: auto;
+}
+
+.gcal-guide-row .gcal-chip {
+    flex: 0 0 84px;
+    min-width: 0;
+}
+
+#gcalSettings .gcal-color-note {
+    flex: 0 1 200px;
+    width: 200px;
+}
+
 .gcal-guide-detail {
     display: flex;
     align-items: center;
@@ -308,11 +330,19 @@
             remember();
             select.addEventListener('change', remember);
         });
-        root.querySelectorAll('input[type="number"], input[type="color"]').forEach(input => {
+        root.querySelectorAll('input[type="number"], input[type="color"], .gcal-color-note').forEach(input => {
             const remember = () => { input.defaultValue = input.value; };
             remember();
             input.addEventListener('input', remember);
         });
+    }
+
+    function showChosenColor(select) {
+        const option = select.selectedOptions[0];
+        const chip = select.closest('.gcal-calendar').querySelector('.gcal-chip');
+        chip.textContent = option.dataset.name;
+        chip.style.backgroundColor = option.dataset.appearance;
+        chip.style.color = option.dataset.text;
     }
 
     function warnWhenNoCalendarSelected() {
@@ -356,6 +386,18 @@
         const selected = saved['calendarIds[]'];
         document.querySelectorAll('input[name="calendarIds[]"]').forEach(box => {
             box.checked = selected ? selected.includes(box.value) : box.dataset.primary === 'true';
+        });
+
+        document.querySelectorAll('.gcal-color-select').forEach(select => {
+            select.value = saved[select.name] || '';
+            if (select.selectedIndex < 0) {
+                select.value = '';
+            }
+            showChosenColor(select);
+        });
+
+        document.querySelectorAll('.gcal-color-note').forEach(input => {
+            input.value = saved[input.name] || '';
         });
 
         keepChoicesThroughReset();

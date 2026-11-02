@@ -40,7 +40,7 @@ The plugin only asks for read-only access. Your credentials and sign-in token st
 - **Refresh interval:** an hour is a sensible default. Each refresh asks Google for current events, and InkyPi only redraws the panel when the image actually changes.
 - **Stale calendars:** a small "Updated" date in the corner shows when the calendar last refreshed, because an e-ink panel keeps showing its last image even if the Pi has stopped. It shows only the date, so it doesn't redraw the panel every hour.
 - **Failures:** if a scheduled refresh fails, the panel keeps your last calendar. A problem that needs you, like an expired sign-in or no calendars selected, adds a red warning across the bottom straight away. A passing one, like a Wi-Fi drop, only adds it after 3 hours, so brief outages don't disturb the display. **Update Now** shows errors in the web UI instead. If only some calendars fail, the "Updated" text says how many.
-- **Colours:** an event's own colour wins. Events with no colour use the closest panel colour to their calendar's colour. The settings page shows what each calendar becomes, plus a guide to which Google colours produce each panel colour. Orange isn't one of the 13.3" panel's inks, so it looks slightly grainy up close.
+- **Colours:** an event's own colour wins. Events with no colour use their calendar's panel colour, which the settings page suggests from the calendar's Google colour and lets you change. The page also lists which Google colours produce each panel colour. Orange isn't one of the 13.3" panel's inks, so it looks slightly grainy up close.
 
 ## Troubleshooting
 

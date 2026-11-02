@@ -410,6 +410,47 @@ class FetchEventsTests(AuthTestCase):
         self.assertEqual(len(events), 1)
 
 
+class ChosenColourTests(AuthTestCase):
+    def setUp(self):
+        super().setUp()
+        self.sign_in()
+        self.start, self.end = view_range("timeGrid2Week", DENVER.localize(datetime(2025, 10, 14)), DENVER)
+        self.plain = {"summary": "E", "start": {"date": "2025-10-14"}, "end": {"date": "2025-10-15"}}
+
+    def fetch(self, items, chosen):
+        def fake(method, url, **kwargs):
+            if "calendarList" in url:
+                return FakeResponse(200, {"items": [{"id": "cal", "backgroundColor": "#cabdbf"}]})
+            return FakeResponse(200, {"items": items})
+        with patch("calendar_api.requests.request", side_effect=fake):
+            events, _ = fetch_events(CalendarClient(self.auth), ["cal"], DENVER, self.start, self.end, chosen)
+        return events
+
+    def test_reads_only_valid_choices_from_the_settings(self):
+        chosen = calendar_api.chosen_calendar_colors({
+            "calendarColor:a@b.com": "green",
+            "calendarColor:suggested": "",
+            "calendarColor:bad": "purple",
+            "viewMode": "green",
+        })
+        self.assertEqual(chosen, {"a@b.com": "green"})
+
+    def test_a_grey_calendar_is_white_until_a_colour_is_chosen(self):
+        self.assertEqual(self.fetch([self.plain], {})[0]["backgroundColor"], "#FFFFFF")
+        self.assertEqual(self.fetch([self.plain], {"cal": "green"})[0]["backgroundColor"], "#00FF00")
+
+    def test_chosen_colour_sets_readable_text(self):
+        self.assertEqual(self.fetch([self.plain], {"cal": "yellow"})[0]["textColor"], "#000000")
+        self.assertEqual(self.fetch([self.plain], {"cal": "black"})[0]["textColor"], "#ffffff")
+
+    def test_an_events_own_colour_still_wins(self):
+        coloured = dict(self.plain, colorId="11")
+        self.assertEqual(self.fetch([coloured], {"cal": "green"})[0]["backgroundColor"], "#FF0000")
+
+    def test_a_choice_only_affects_its_own_calendar(self):
+        self.assertEqual(self.fetch([self.plain], {"other": "green"})[0]["backgroundColor"], "#FFFFFF")
+
+
 class FailureDecisionTests(unittest.TestCase):
     def test_a_passing_failure_waits_out_the_grace_period(self):
         error = RuntimeError("Could not reach Google")

@@ -12,6 +12,7 @@ from plugins.google_calendar.calendar_api import (
     CalendarClient,
     GoogleAuth,
     SetupRequired,
+    chosen_calendar_colors,
     color_guide,
     fetch_events,
     palette_name_for_hex,
@@ -107,7 +108,9 @@ class GoogleCalendar(BasePlugin):
         first_day = int(settings.get("weekStartDay") or 0)
         previous_days = settings.get("displayPreviousDays") == "true"
         start, end = view_range(view, now, tz, first_day, previous_days)
-        events, failed_calendars = fetch_events(CalendarClient(auth), calendar_ids, tz, start, end)
+        events, failed_calendars = fetch_events(
+            CalendarClient(auth), calendar_ids, tz, start, end, chosen_calendar_colors(settings)
+        )
         logger.info(f"Rendering Google Calendar: view={view}, events={len(events)}")
 
         render_view = view

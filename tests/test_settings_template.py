@@ -54,6 +54,34 @@ class SettingsTemplateTests(unittest.TestCase):
         self.assertIn("looks grainy", html)
         self.assertLess(html.index(">Tomato") if ">Tomato" in html else html.index("Tomato"), html.index("Banana"))
 
+    def test_each_calendar_can_choose_a_panel_colour(self):
+        html = render(signed_in=True, has_client=True, available_calendars=[
+            {"id": "a@b", "summary": "<Meals>", "backgroundColor": "#cabdbf", "panel": calendar_api.panel_color("white")},
+        ])
+        self.assertIn('name="calendarColor:a@b"', html)
+        self.assertIn(">Suggested (White)</option>", html)
+        self.assertIn('aria-label="Panel colour for &lt;Meals&gt;"', html)
+        for key in calendar_api.INKY_COLORS:
+            self.assertIn(f'<option value="{key}"', html)
+        self.assertTrue(f'name="{calendar_api.CALENDAR_COLOR_PREFIX}a@b"' in html)
+
+    def test_each_panel_colour_has_a_note_field(self):
+        html = render(signed_in=True, has_client=True)
+        for key in calendar_api.INKY_COLORS:
+            self.assertIn(f'name="colorNote:{key}"', html)
+        self.assertIn('aria-label="Note for Orange"', html)
+        self.assertIn("don't appear on the panel", html)
+
+    def test_notes_are_restored_and_survive_the_form_reset(self):
+        html = render(signed_in=True, has_client=True)
+        self.assertIn("input.value = saved[input.name] || '';", html)
+        self.assertIn('input[type="color"], .gcal-color-note', html)
+
+    def test_saved_colours_are_restored_on_the_page(self):
+        html = render(signed_in=True, has_client=True)
+        self.assertIn("select.value = saved[select.name] || '';", html)
+        self.assertIn("showChosenColor(select);", html)
+
     def test_blank_form_says_it_isnt_your_saved_settings(self):
         html = render(signed_in=True, has_client=True)
         self.assertIn("This is a blank form", html)
