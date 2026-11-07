@@ -29,4 +29,4 @@ You can revoke access at any time from your [Google Account permissions page](ht
 
 ## Questions
 
-Please [open an issue](https://github.com/kwbunker/InkyPi-google_calendar/issues) on this repository.
+Please [open an issue](https://github.com/kwbunker/inkypi-google-calendar/issues) on this repository.

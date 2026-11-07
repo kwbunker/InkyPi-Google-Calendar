@@ -15,7 +15,7 @@ Starting from a blank SD card, or running into trouble? The [full setup guide](d
 If InkyPi is already running, on your Pi:
 
 ```bash
-inkypi plugin install google_calendar https://github.com/kwbunker/InkyPi-google_calendar
+inkypi plugin install google_calendar https://github.com/kwbunker/inkypi-google-calendar
 ```
 
 ## Set up Google access
