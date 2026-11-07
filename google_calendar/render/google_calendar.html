@@ -123,6 +123,24 @@
                 calendar.render();
                 return calendar;
             });
+            weeks.forEach(fitLongWords);
+        }
+
+        // A word too wide for its box, such as "Thanksgiving" in one day, would break
+        // mid-word. Its title shrinks to fit instead, down to 70%, and only then breaks.
+        function fitLongWords(week) {
+            week.querySelectorAll('.event-title').forEach(title => {
+                if (title.scrollWidth <= title.clientWidth) {
+                    return;
+                }
+                const size = parseFloat(getComputedStyle(title).fontSize);
+                for (let percent = 95; percent >= 70 && title.scrollWidth > title.clientWidth; percent -= 5) {
+                    title.style.fontSize = `${size * percent / 100}px`;
+                }
+                if (title.scrollWidth > title.clientWidth) {
+                    title.style.overflowWrap = 'break-word';
+                }
+            });
         }
 
         function headerHeight(week) {
@@ -149,6 +167,7 @@
             const spare = (total - needed[0] - needed[1]) / 2;
             weeks.forEach((week, index) => { week.style.flex = `0 0 ${needed[index] + spare}px`; });
             calendars.forEach(calendar => calendar.updateSize());
+            weeks.forEach(fitLongWords);
         }
 
         function heightsAt(scale) {

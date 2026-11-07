@@ -51,17 +51,26 @@ def all_day(title, first, last, color=None):
     return item
 
 
+# A family's two weeks, using every panel color. Offsets count days from the first Sunday.
 items = [
-    timed("Dentist Appointment", 0, "10:45", "12:00", "11"),
-    all_day("Public Holiday", 1, 1, "5"),
-    timed("Cooking Class", 1, "19:00", "20:30", "6"),
-    all_day("Field Trip", 2, 2, "10"),
-    timed("Team Meeting", 3, "19:00", "19:45", "6"),
-    timed("Project Review 4:10-4:30", 4, "16:00", "16:30"),
-    all_day("Beach Vacation", 9, 12, "6"),
-    timed("Tom & Jerry <Film>", 9, "15:10", "17:35", "6"),
-    all_day("Conference", 5, 8, "9"),
-    all_day("Gray Event", 13, 13, "8"),
+    timed("Soccer Game", 0, "09:00", "10:30", "10"),
+    timed("Dentist", 1, "15:30", "16:30", "11"),
+    timed("Piano Lesson", 1, "17:00", "17:45", "6"),
+    all_day("Picture Day", 2, 2, "5"),
+    timed("Book Club", 2, "19:00", "20:30", "6"),
+    timed("Parent-Teacher Conferences", 3, "18:00", "19:00"),
+    all_day("Library Books Due", 4, 4, "8"),
+    timed("Swim Practice", 4, "16:00", "17:00", "10"),
+    all_day("Grandparents Visiting", 5, 7, "9"),
+    timed("Birthday Party", 6, "14:00", "16:00", "6"),
+    timed("Soccer Game", 7, "09:00", "10:30", "10"),
+    timed("Orthodontist", 8, "15:30", "16:15", "11"),
+    timed("Piano Lesson", 9, "17:00", "17:45", "6"),
+    all_day("Veterans Day: No School", 10, 10, "5"),
+    timed("Swim Practice", 11, "16:00", "17:00", "10"),
+    timed("Movie Night", 12, "19:00", "21:00"),
+    all_day("Thanksgiving Potluck Signup", 12, 12, "5"),
+    timed("Yard Cleanup", 13, "09:00", "12:00", "8"),
 ]
 busy = sys.argv[4] if len(sys.argv) > 4 else ""
 for index in range({"slight": 3, "lopsided": 6, "heavy": 8, "extreme": 30}.get(busy, 0)):
@@ -74,15 +83,22 @@ default_color = palette_name_for_hex("#3788d8")
 palette = ink_colors(sys.argv[5] if len(sys.argv) > 5 else 0.5)
 events = [to_fullcalendar_event(item, default_color, tz, palette) for item in items]
 
+# One night has two entries, one title wraps, one is timed, and the last day is unplanned.
 dinners = [
-    all_day("Tacos", 0, 0),
-    all_day("Slow Cooker Chicken Tikka Masala", 1, 1),
+    all_day("Roast Chicken", 0, 0),
+    all_day("Tacos", 1, 1),
     all_day("Leftovers", 2, 2),
     timed("Pizza Night", 3, "18:00", "19:00"),
-    all_day("Soup", 4, 4),
-    all_day("Grandma's House", 4, 4),
-    all_day("Camping Food", 7, 9),
-    all_day("Pasta", 11, 11),
+    all_day("Slow Cooker Chili", 4, 4),
+    all_day("Grandma's Lasagna", 5, 5),
+    all_day("Date Night", 6, 6),
+    all_day("Kids: Mac & Cheese", 6, 6),
+    all_day("Pot Roast", 7, 7),
+    all_day("Stir-Fry", 8, 8),
+    all_day("Sheet Pan Chicken Fajitas", 9, 9),
+    all_day("Breakfast for Dinner", 10, 10),
+    all_day("Soup & Grilled Cheese", 11, 11),
+    all_day("Takeout", 12, 12),
 ]
 date_row = None
 if not (len(sys.argv) > 6 and sys.argv[6] == "nodinners"):
