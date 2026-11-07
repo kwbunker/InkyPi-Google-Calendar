@@ -109,7 +109,7 @@ sudo systemctl restart inkypi
 ## 5. Install this plugin
 
 ```bash
-inkypi plugin install google_calendar https://github.com/kwbunker/inkypi-google-calendar
+inkypi plugin install google_calendar https://github.com/kwbunker/InkyPi-Google-Calendar
 ```
 
 ### Google Cloud Console

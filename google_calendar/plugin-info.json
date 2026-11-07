@@ -2,5 +2,5 @@
     "display_name": "Google Calendar",
     "id": "google_calendar",
     "class": "GoogleCalendar",
-    "repository": "https://github.com/kwbunker/inkypi-google-calendar"
+    "repository": "https://github.com/kwbunker/InkyPi-Google-Calendar"
 }
