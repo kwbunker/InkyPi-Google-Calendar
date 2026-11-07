@@ -6,7 +6,7 @@ An [InkyPi](https://github.com/fatihak/InkyPi) plugin that shows your Google Cal
 
 InkyPi's built-in Calendar plugin reads iCal feeds, which don't carry per-event colors. This plugin uses the Google Calendar API so they come through. It maps Google's colors to the panel's inks, and adds no Python packages, which keeps it light on a Pi Zero 2 W.
 
-**Status:** new and in active development, built for a Raspberry Pi Zero 2 W with a 13.3" Inky Impression. Other hardware is untested.
+**Status:** new and in active development, and in daily use on a Raspberry Pi Zero 2 W with a 13.3" Inky Impression. The two-week view has also been checked in rendered previews at 800×480, the 7.3" panel's size, in both orientations, but not on a real smaller panel. The Day, Week, Month and List layouts come from InkyPi's built-in Calendar plugin and look as they do there.
 
 ## Install
 
@@ -21,6 +21,8 @@ inkypi plugin install google_calendar https://github.com/kwbunker/InkyPi-Google-
 ## Set up Google access
 
 This uses the [Google Calendar API](https://developers.google.com/workspace/calendar/api/guides/overview), which is free for personal use and needs no API key, only a sign-in. You set up your own small Google Cloud project, so no one else is involved in your access.
+
+**Usage limits:** as of May 2026, Google lets each project make [1,000,000 Calendar API requests a day](https://developers.google.com/workspace/calendar/api/guides/quota) without charge. Each refresh makes one request per selected calendar plus one more, so two calendars refreshing every 15 minutes use about 300 a day.
 
 1. In the [Google Cloud Console](https://console.cloud.google.com/), create a project and enable the **Google Calendar API**.
 2. Set up the **OAuth consent screen** as an External app. Publishing needs a home page and a privacy policy link, so on the Branding page you can use your own copy of this repo's page and its [PRIVACY.md](PRIVACY.md). Don't upload a logo, because that requires Google's verification.
@@ -40,9 +42,10 @@ The plugin only asks for read-only access. Your credentials and sign-in token st
 - **Refresh interval:** an hour is a sensible default. Each refresh asks Google for current events, but the plugin only renders a new image when something changed, and only then does the panel redraw. It always redraws at least once a day, when the date moves on.
 - **Stale calendars:** the "Updated" stamp in the corner shows when the calendar last changed on the panel, not when it last checked Google. An e-ink panel keeps showing its last image even if the Pi has stopped, so a date earlier than today means something is wrong.
 - **Busy weeks:** in the two-week view, a busy week first takes spare room from the other week. If that isn't enough, event boxes shrink evenly, down to 60%. If they still don't fit, a day shows "+N more" rather than losing events silently.
+- **Panel sizes:** the two-week view is sized for the 13.3" panel in either orientation, and scales its text and spacing down on smaller panels. A word too wide for its box, like "Thanksgiving" in one day, shrinks to fit before it breaks. In portrait on a 7.3" panel each day is very narrow, so turning off weekends helps.
 - **Dinner plans and the like:** choose **Under the date** for a calendar on the settings page, and in the two-week view its event titles become a plain row under each date instead of boxes. Other layouts show those events as normal.
 - **Failures:** if a scheduled refresh fails, the panel keeps your last calendar. A problem that needs you, like an expired sign-in or no calendars selected, adds a red warning across the bottom straight away. A passing one, like a Wi-Fi drop, only adds it after 3 hours, so brief outages don't disturb the display. **Update Now** shows errors in the web UI instead. If only some calendars fail, the "Updated" text says how many.
-- **Colors:** an event's own color wins. Events with no color use their calendar's panel color, which the settings page suggests from the calendar's Google color and lets you change. The page also lists which Google colors produce each panel color. Orange isn't one of the 13.3" panel's inks, so it looks slightly grainy up close. The panel's inks are darker than InkyPi's web preview suggests. Raising **Inky Driver Saturation** darkens the preview's event colors, and 1.0 matches the panel, but above about 0.6 thin black lines and text start to speckle on the panel.
+- **Colors:** an event's own color wins. Events with no color use their calendar's panel color, which the settings page suggests from the calendar's Google color and lets you change. The page also lists which Google colors produce each panel color. Orange isn't one of the 13.3" panel's inks, so it looks slightly grainy up close. The panel's inks are darker than InkyPi's web preview suggests. Raising **Inky Driver Saturation** darkens the preview's event colors, and 1.0 matches the panel, but above about 0.6 thin black lines and text start to speckle on the panel. That applies to the 13.3", 5.7" and 4" Inky Impressions, where the plugin draws with the driver's own ink colors. The 7.3" gets pure colors instead, so its preview stays bright: InkyPi can't tell its two models apart, and the older one's inks would speckle with the darker colors. Either way, the panel prints the same solid inks.
 
 ## Troubleshooting
 
@@ -57,6 +60,6 @@ Run the tests from the repo root with Python, `requests`, `pytz` and `jinja2` av
 python -m unittest discover -s tests
 ```
 
-`tests/render_sample.py` renders made-up events through the real template, with no Google account needed.
+`tests/render_sample.py` renders made-up events through the real template on a Pi, with no Google account needed. Run it with `--help` for the layouts, panel sizes and other options.
 
 Based on the Calendar plugin in [InkyPi](https://github.com/fatihak/InkyPi), and licensed under the GPL-3.0 like InkyPi.

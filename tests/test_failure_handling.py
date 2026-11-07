@@ -88,7 +88,44 @@ class PaletteTests(unittest.TestCase):
 
     def test_other_panels_keep_pure_colors(self):
         self.assertEqual(self.palette(resolution=(800, 480)), plugin_module.INKY_COLORS)
+        self.assertEqual(self.palette(resolution=(400, 300)), plugin_module.INKY_COLORS)
         self.assertEqual(self.palette(display_type="epd7in3e"), plugin_module.INKY_COLORS)
+
+    def test_smaller_inky_impressions_with_the_same_inks_match_them(self):
+        for size in ((600, 400), (400, 600), (600, 448), (640, 400)):
+            self.assertEqual(self.palette(resolution=size), plugin_module.ink_colors(0.5), size)
+
+
+@unittest.skipIf(plugin_module is None, "needs InkyPi on the Python path")
+class PanelScaleTests(unittest.TestCase):
+    def test_the_13_inch_panel_is_full_size_either_way_round(self):
+        self.assertEqual(plugin_module._panel_scale((1600, 1200)), 1)
+        self.assertEqual(plugin_module._panel_scale((1200, 1600)), 1)
+
+    def test_a_smaller_panel_scales_by_its_tighter_side(self):
+        self.assertAlmostEqual(plugin_module._panel_scale((800, 480)), 0.4)
+        self.assertAlmostEqual(plugin_module._panel_scale((480, 800)), 0.4)
+        self.assertAlmostEqual(plugin_module._panel_scale((640, 400)), 1 / 3)
+
+    def test_a_larger_screen_is_never_enlarged(self):
+        self.assertEqual(plugin_module._panel_scale((3840, 2160)), 1)
+
+    def test_the_scale_reaches_the_template(self):
+        params = {}
+        device = SimpleNamespace(
+            get_resolution=lambda: [800, 480],
+            get_config=lambda key, default=None: {"timezone": "America/Denver"}.get(key, default),
+            get_playlist_manager=lambda: SimpleNamespace(playlists=[]),
+        )
+        plugin = plugin_module.GoogleCalendar({"id": "google_calendar"})
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        auth = GoogleAuth(os.path.join(folder.name, "state"))
+        with patch.object(plugin_module.GoogleCalendar, "_auth", return_value=auth), \
+                patch.object(plugin_module, "fetch_events", return_value=([], 0)), \
+                patch.object(plugin, "render_image", side_effect=lambda *args: params.update(args[3]) or Image.new("RGB", (800, 480))):
+            plugin.generate_image({"calendarIds[]": ["cal"], "viewMode": "timeGrid2Week"}, device)
+        self.assertAlmostEqual(params["panel_scale"], 0.4)
 
 
 @unittest.skipIf(plugin_module is None, "needs InkyPi on the Python path")

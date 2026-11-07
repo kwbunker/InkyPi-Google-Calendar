@@ -5,7 +5,7 @@
 <script src="{{static_dir}}/scripts/calendar.min.js" charset="UTF-8"></script>
 
 {% if view == 'timeGrid2Week' %}
-<div class="two-week" style="--font-scale: {{ font_scale }}; --fit-scale: 1; --fc-border-color: {{ plugin_settings.textColor or 'black' }}; --fc-page-bg-color: {{ plugin_settings.backgroundColor or 'white' }}; --fc-today-bg-color: transparent;">
+<div class="two-week" style="--font-scale: {{ font_scale * panel_scale }}; --panel-scale: {{ panel_scale }}; --fit-scale: 1; --fc-border-color: {{ plugin_settings.textColor or 'black' }}; --fc-page-bg-color: {{ plugin_settings.backgroundColor or 'white' }}; --fc-today-bg-color: transparent;">
     <div id="week-1" class="calendar week"></div>
     <div id="week-2" class="calendar week"></div>
 </div>
@@ -21,7 +21,7 @@
 --fc-table-font-size: {{ 1 * font_scale }}em;
 "></div>
 {% endif %}
-<div class="updated-stamp">Updated {{ updated }}</div>
+<div class="updated-stamp" style="--panel-scale: {{ panel_scale }};">Updated {{ updated }}</div>
 
 <script>
     const events = {{ events | tojson }};

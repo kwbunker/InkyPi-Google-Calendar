@@ -21,7 +21,8 @@
   background: white;
   color: black;
   font-family: "Jost";
-  font-size: 18px;
+  /* Smaller on small panels, but kept readable. */
+  font-size: calc(18px * max(var(--panel-scale, 1), 0.6));
 }
 
 .fc-toolbar.fc-header-toolbar {
@@ -63,7 +64,9 @@
   font-weight: 600 !important;
 }
 
-/* Two-week view: large, high-contrast event boxes for reading across a room. */
+/* Two-week view: large, high-contrast event boxes for reading across a room. Sizes are for
+   the 13.3" panel. --panel-scale shrinks spacing on smaller panels, and --font-scale
+   includes it along with the Font Size setting. */
 .two-week {
   display: flex;
   flex-direction: column;
@@ -87,7 +90,7 @@
 }
 
 .two-week .fc-col-header-cell {
-  padding: 8px 4px !important;
+  padding: calc(8px * var(--panel-scale)) 4px !important;
   font-weight: 700 !important;
   line-height: 1.2 !important;
   vertical-align: top !important;
@@ -100,9 +103,9 @@
 /* Titles under the date with no box, reaching the cell's edges to read as a table row.
    The negative margins undo the padding of the cell and the cushion. */
 .date-row {
-  min-height: calc(1.2em + 8px);
-  margin: 6px -8px 0;
-  padding: 6px 8px 0;
+  min-height: calc(1.2em + 8px * var(--panel-scale));
+  margin: calc(6px * var(--panel-scale)) -8px 0;
+  padding: calc(6px * var(--panel-scale)) 8px 0;
   border-top: 2px solid currentColor;
   font-weight: 600;
   overflow-wrap: break-word;
@@ -132,9 +135,9 @@
 /* --fit-scale shrinks only the event boxes, when a week would otherwise overflow. */
 .two-week .fc-event {
   margin: calc(3px * var(--fit-scale)) 2px !important;
-  padding: calc(9px * var(--fit-scale)) calc(12px * var(--fit-scale)) !important;
-  border: 3px solid black !important;
-  border-radius: 12px !important;
+  padding: calc(9px * var(--panel-scale) * var(--fit-scale)) calc(12px * var(--panel-scale) * var(--fit-scale)) !important;
+  border: max(1.5px, calc(3px * var(--panel-scale))) solid black !important;
+  border-radius: calc(12px * var(--panel-scale)) !important;
   white-space: normal !important;
 }
 

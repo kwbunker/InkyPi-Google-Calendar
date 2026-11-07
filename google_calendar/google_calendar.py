@@ -156,6 +156,7 @@ class GoogleCalendar(BasePlugin):
             "time_format": time_format,
             "plugin_settings": settings,
             "font_scale": FONT_SIZES.get(settings.get("fontSize", "normal"), 1),
+            "panel_scale": _panel_scale(dimensions),
         }
 
         image = self.render_image(dimensions, "google_calendar.html", "google_calendar.css", template_params)
@@ -245,13 +246,26 @@ def _is_saved_instance(settings, device_config):
     return any(entry.settings is settings for playlist in manager.playlists for entry in playlist.plugins)
 
 
+# Inky Impression sizes whose only driver blends the same measured inks as the 13.3", so
+# ink_colors prints as solid ink: 13.3", 4" Spectra, 5.7" and the older 4". The 7.3" isn't
+# here because two drivers share 800x480, and the older one's inks would speckle.
+MATCHED_INK_SIZES = {(1200, 1600), (400, 600), (448, 600), (400, 640)}
+
+
 def _palette(device_config):
-    """Pure colors, except on the 13.3" Inky, the only panel whose inks have been measured."""
+    """The driver's own ink colors on panels known to use them, and pure colors elsewhere."""
     is_inky = device_config.get_config("display_type", default="inky") == "inky"
-    if not is_inky or sorted(device_config.get_resolution()) != [1200, 1600]:
+    if not is_inky or tuple(sorted(device_config.get_resolution())) not in MATCHED_INK_SIZES:
         return INKY_COLORS
     image_settings = device_config.get_config("image_settings") or {}
     return ink_colors(image_settings.get("inky_saturation", 0.5))
+
+
+def _panel_scale(dimensions):
+    """How much smaller this panel is than the 13.3" one the two-week view was sized for.
+    The tighter of its two sides decides, in either orientation, and it never enlarges."""
+    long_side, short_side = max(dimensions), min(dimensions)
+    return min(long_side / 1600, short_side / 1200, 1)
 
 
 def _dimensions(device_config):
