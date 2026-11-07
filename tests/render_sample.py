@@ -61,7 +61,7 @@ items = [
     all_day("Beach Vacation", 9, 12, "6"),
     timed("Tom & Jerry <Film>", 9, "15:10", "17:35", "6"),
     all_day("Conference", 5, 8, "9"),
-    all_day("Grey Event", 13, 13, "8"),
+    all_day("Gray Event", 13, 13, "8"),
 ]
 busy = sys.argv[4] if len(sys.argv) > 4 else ""
 for index in range({"slight": 3, "lopsided": 6, "heavy": 8, "extreme": 30}.get(busy, 0)):

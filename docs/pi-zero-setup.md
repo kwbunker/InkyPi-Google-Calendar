@@ -104,7 +104,7 @@ sudo systemctl restart inkypi
 
 **InkyPi's `update.sh` puts 2.4.0 back,** so repeat this after every update.
 
-**Inky Driver Saturation** in **Settings** changes how colours are dithered. Upstream's docs suggest trying 0, but on this panel 0.5 looked better to my eye, so compare both on your own panel. Higher values bring the web preview closer to the panel's real colours, but in simulation thin black lines and text start to speckle above about 0.6.
+**Inky Driver Saturation** in **Settings** changes how colors are dithered. Upstream's docs suggest trying 0, but on this panel 0.5 looked better to my eye, so compare both on your own panel. Higher values bring the web preview closer to the panel's real colors, but in simulation thin black lines and text start to speckle above about 0.6.
 
 ## 5. Install this plugin
 
@@ -117,7 +117,7 @@ inkypi plugin install google_calendar https://github.com/kwbunker/InkyPi-Google-
 Google's menus change, so these names may differ a little.
 
 1. Create a project and enable the **Google Calendar API**.
-2. Set up the consent screen as an External app. **Publishing needs more than the fields marked as required:** the Branding page also needs a home page link and a privacy policy link, or **Publish app** stays greyed out.
+2. Set up the consent screen as an External app. **Publishing needs more than the fields marked as required:** the Branding page also needs a home page link and a privacy policy link, or **Publish app** stays grayed out.
    - You can use this repo's page and [PRIVACY.md](../PRIVACY.md), or your own copies.
    - If Google asks you to add `github.com` under **Authorized domains**, do that.
    - **Don't upload a logo.** That requires Google's verification.
@@ -151,19 +151,19 @@ Clicking **Update Now** is a one-off. For automatic updates:
 
 **If the playlist entry never updates,** open it from **Playlists** and check that your calendars are still selected. InkyPi resets the form after **Add to Playlist**, even when adding failed. Plugin versions before this guide let a retry save no calendars, Afrikaans as the language, and the smallest font. This is fixed now, but entries saved that way need fixing and saving again.
 
-## Choosing colours
+## Choosing colors
 
 The panel has six inks plus a mixed orange, and the plugin's settings page shows what's available:
 
-- **Beside each calendar** is the panel colour its events get when they have no colour of their own. It's suggested from the calendar's Google colour, and you can choose a different one from the list. That only affects the panel, not your Google Calendar. On a saved entry, click **Save** afterwards.
+- **Beside each calendar** is the panel color its events get when they have no color of their own. It's suggested from the calendar's Google color, and you can choose a different one from the list. That only affects the panel, not your Google Calendar. On a saved entry, click **Save** afterwards.
 - **Under the date**, at the bottom of that list, shows a calendar's event titles in a plain row under each date instead of boxes, which suits something like a dinner plan. It only applies to the 2 Weeks layout, and other layouts show those events as normal.
-- **Panel colours** lists which Google event colours produce each panel colour. For example, Tangerine becomes orange, and both Tomato and Flamingo become red.
+- **Panel colors** lists which Google event colors produce each panel color. For example, Tangerine becomes orange, and both Tomato and Flamingo become red.
 
-- **The note beside each panel colour** is a reminder for you, such as who that colour is for. Notes are saved with the entry and don't appear on the panel.
+- **The note beside each panel color** is a reminder for you, such as who that color is for. Notes are saved with the entry and don't appear on the panel.
 
-Pale or grey calendar colours are worth checking. A grey calendar is suggested as white, so its events show as plain white boxes unless you choose something else. An event's own colour always wins over its calendar's.
+Pale or gray calendar colors are worth checking. A gray calendar is suggested as white, so its events show as plain white boxes unless you choose something else. An event's own color always wins over its calendar's.
 
-**Colour-coding by person or category:** events can only get a colour through Google's event colours, which give six distinct results on the panel: red, orange, yellow, green, blue and white. Black can only be a calendar's colour. Several Google colours share one panel colour, so pick one Google colour per person. For example, Tomato and Flamingo look different in Google Calendar but are both red on the panel. If yellow is your calendar's default, that leaves five for people.
+**Color-coding by person or category:** events can only get a color through Google's event colors, which give six distinct results on the panel: red, orange, yellow, green, blue and white. Black can only be a calendar's color. Several Google colors share one panel color, so pick one Google color per person. For example, Tomato and Flamingo look different in Google Calendar but are both red on the panel. If yellow is your calendar's default, that leaves five for people.
 
 ## What to watch afterwards
 
@@ -182,7 +182,7 @@ Pale or grey calendar colours are worth checking. A grey calendar is suggested a
 | Installer says it finished but packages are missing | It ran without a terminal | Wait for apt, then run `install/update.sh` |
 | `Can't find a driver` or `No EEPROM detected` | Poorly seated header, or a board that doesn't auto-detect | Reseat first. If that fails, edit `src/display/inky_display.py` to use `from inky.inky_el133uf1 import Inky` and `Inky()`. Upstream's docs name an outdated file |
 | Panel stopped changing after an update | `update.sh` restored Inky 2.4.0, or a real fault | Reinstall Inky 2.6.0, and check `journalctl -u inkypi` |
-| **Publish app** is greyed out | The home page or privacy policy link is missing | Fill them in on the Branding page |
+| **Publish app** is grayed out | The home page or privacy policy link is missing | Fill them in on the Branding page |
 | Signed out after about a week | The app is still in Testing mode | Publish to Production, then sign in again |
 | Sign-in link shows `invalid_client` | The new client hasn't taken effect yet | Wait a while and try again |
 | Red warning says no calendars are selected | Entry saved before the form-reset fix | Open it under **Playlists**, reselect your calendars, check the language and font, and save |

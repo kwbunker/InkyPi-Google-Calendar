@@ -4,7 +4,7 @@ This policy covers the InkyPi Google Calendar plugin, which appears on Google's 
 
 ## What it accesses
 
-With your permission, the plugin reads your Google Calendar through Google's read-only calendar scope (`calendar.readonly`). That covers your list of calendars and the events on the calendars you select, including their titles, times, colours, locations and descriptions. It can't create, change or delete anything.
+With your permission, the plugin reads your Google Calendar through Google's read-only calendar scope (`calendar.readonly`). That covers your list of calendars and the events on the calendars you select, including their titles, times, colors, locations and descriptions. It can't create, change or delete anything.
 
 ## How that data is used
 

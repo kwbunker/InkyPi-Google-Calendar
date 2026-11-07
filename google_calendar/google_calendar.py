@@ -246,7 +246,7 @@ def _is_saved_instance(settings, device_config):
 
 
 def _palette(device_config):
-    """Pure colours, except on the 13.3" Inky, the only panel whose inks have been measured."""
+    """Pure colors, except on the 13.3" Inky, the only panel whose inks have been measured."""
     is_inky = device_config.get_config("display_type", default="inky") == "inky"
     if not is_inky or sorted(device_config.get_resolution()) != [1200, 1600]:
         return INKY_COLORS

@@ -111,7 +111,7 @@ class EventConversionTests(unittest.TestCase):
         self.assertTrue(event["allDay"])
         self.assertEqual((event["start"], event["end"]), ("2025-10-21", "2025-10-26"))
 
-    def test_event_colour_wins_over_calendar_colour(self):
+    def test_event_color_wins_over_calendar_color(self):
         event = to_fullcalendar_event({
             "colorId": "6",
             "start": {"date": "2025-10-21"},
@@ -120,14 +120,14 @@ class EventConversionTests(unittest.TestCase):
         self.assertEqual(event["backgroundColor"], "#FF8000")
         self.assertEqual(event["textColor"], "#000000")
 
-    def test_event_without_a_colour_uses_the_calendar_colour(self):
+    def test_event_without_a_color_uses_the_calendar_color(self):
         event = to_fullcalendar_event({
             "start": {"date": "2025-10-21"},
             "end": {"date": "2025-10-22"},
         }, "green", DENVER)
         self.assertEqual(event["backgroundColor"], "#00FF00")
 
-    def test_unknown_colour_id_falls_back_to_the_calendar_colour(self):
+    def test_unknown_color_id_falls_back_to_the_calendar_color(self):
         event = to_fullcalendar_event({
             "colorId": "99",
             "start": {"date": "2025-10-21"},
@@ -140,18 +140,18 @@ class EventConversionTests(unittest.TestCase):
         self.assertEqual(event["title"], "(No title)")
 
 
-class ColourTests(unittest.TestCase):
-    def test_hue_mapping_agrees_with_every_google_event_colour(self):
+class ColorTests(unittest.TestCase):
+    def test_hue_mapping_agrees_with_every_google_event_color(self):
         for color_id, color in calendar_api.EVENT_COLORS.items():
             self.assertEqual(palette_name_for_hex(color["hex"]), color["panel"], color_id)
 
-    def test_guide_lists_every_panel_colour_and_every_google_colour_once(self):
+    def test_guide_lists_every_panel_color_and_every_google_color_once(self):
         guide = calendar_api.color_guide()
         self.assertEqual({row["name"].lower() for row in guide}, set(calendar_api.INKY_COLORS))
         listed = [google["name"] for row in guide for google in row["google"]]
         self.assertEqual(sorted(listed), sorted(color["name"] for color in calendar_api.EVENT_COLORS.values()))
 
-    def test_guide_matches_the_colour_events_actually_get(self):
+    def test_guide_matches_the_color_events_actually_get(self):
         for row in calendar_api.color_guide():
             for color_id, color in calendar_api.EVENT_COLORS.items():
                 if color in row["google"]:
@@ -163,7 +163,7 @@ class ColourTests(unittest.TestCase):
                     self.assertEqual(event["backgroundColor"], row["hex"], color["name"])
                     self.assertEqual(event["textColor"], row["text"], color["name"])
 
-    def test_ink_colours_are_the_drivers_exact_palette(self):
+    def test_ink_colors_are_the_drivers_exact_palette(self):
         # From _palette_blend in Pimoroni's inky_el133uf1 driver, at saturation 0.5.
         colors = calendar_api.ink_colors(0.5)
         self.assertEqual(colors["red"], "#cd2425")
@@ -171,7 +171,7 @@ class ColourTests(unittest.TestCase):
         self.assertEqual(colors["blue"], "#1e1dae")
         self.assertEqual(colors["green"], "#1dad23")
 
-    def test_ink_colours_run_from_pure_to_measured(self):
+    def test_ink_colors_run_from_pure_to_measured(self):
         for name in ("red", "yellow", "green", "blue", "orange"):
             self.assertEqual(calendar_api.ink_colors(0)[name], calendar_api.INKY_COLORS[name].lower(), name)
             self.assertEqual(calendar_api.ink_colors(1)[name], calendar_api.PANEL_APPEARANCE[name], name)
@@ -188,7 +188,7 @@ class ColourTests(unittest.TestCase):
             self.assertEqual(colors["white"], "#FFFFFF")
             self.assertEqual(colors["black"], "#000000")
 
-    def test_palette_changes_the_background_but_not_the_text_colour(self):
+    def test_palette_changes_the_background_but_not_the_text_color(self):
         event = to_fullcalendar_event(
             {"start": {"date": "2025-10-21"}, "end": {"date": "2025-10-22"}},
             "yellow", DENVER, calendar_api.ink_colors(1),
@@ -196,24 +196,24 @@ class ColourTests(unittest.TestCase):
         self.assertEqual(event["backgroundColor"], calendar_api.PANEL_APPEARANCE["yellow"])
         self.assertEqual(event["textColor"], contrast_color(calendar_api.INKY_COLORS["yellow"]))
 
-    def test_guide_explains_the_colours_with_no_simple_match(self):
+    def test_guide_explains_the_colors_with_no_simple_match(self):
         notes = {row["name"]: row["note"] for row in calendar_api.color_guide()}
         self.assertIn("grainy", notes["Orange"])
         self.assertIn("No Google", notes["Black"])
 
-    def test_pale_calendar_colours_keep_their_hue(self):
+    def test_pale_calendar_colors_keep_their_hue(self):
         self.assertEqual(palette_name_for_hex("#9a9cff"), "blue")
         self.assertEqual(palette_name_for_hex("#f691b2"), "red")
 
-    def test_greys_become_black_or_white(self):
+    def test_grays_become_black_or_white(self):
         self.assertEqual(palette_name_for_hex("#202124"), "black")
         self.assertEqual(palette_name_for_hex("#f1f3f4"), "white")
 
-    def test_bad_or_missing_colour_uses_the_fallback(self):
+    def test_bad_or_missing_color_uses_the_fallback(self):
         self.assertEqual(palette_name_for_hex(None), "blue")
-        self.assertEqual(palette_name_for_hex("not-a-colour"), "blue")
+        self.assertEqual(palette_name_for_hex("not-a-color"), "blue")
 
-    def test_text_colours_match_what_worked_on_the_panel(self):
+    def test_text_colors_match_what_worked_on_the_panel(self):
         expected = {"red": "#ffffff", "yellow": "#000000", "orange": "#000000", "green": "#ffffff", "blue": "#ffffff"}
         for name, text in expected.items():
             self.assertEqual(contrast_color(calendar_api.INKY_COLORS[name]), text, name)
@@ -399,7 +399,7 @@ class FetchEventsTests(AuthTestCase):
             raise AssertionError(url)
         return fake
 
-    def test_uses_each_calendars_own_colour(self):
+    def test_uses_each_calendars_own_color(self):
         routes = {
             "calendarList": FakeResponse(200, {"items": [
                 {"id": "green-cal", "backgroundColor": "#51b749"},
@@ -443,7 +443,7 @@ class FetchEventsTests(AuthTestCase):
         self.assertEqual(len(events), 1)
 
 
-class ChosenColourTests(AuthTestCase):
+class ChosenColorTests(AuthTestCase):
     def setUp(self):
         super().setUp()
         self.sign_in()
@@ -468,17 +468,17 @@ class ChosenColourTests(AuthTestCase):
         })
         self.assertEqual(chosen, {"a@b.com": "green"})
 
-    def test_a_grey_calendar_is_white_until_a_colour_is_chosen(self):
+    def test_a_gray_calendar_is_white_until_a_color_is_chosen(self):
         self.assertEqual(self.fetch([self.plain], {})[0]["backgroundColor"], "#FFFFFF")
         self.assertEqual(self.fetch([self.plain], {"cal": "green"})[0]["backgroundColor"], "#00FF00")
 
-    def test_chosen_colour_sets_readable_text(self):
+    def test_chosen_color_sets_readable_text(self):
         self.assertEqual(self.fetch([self.plain], {"cal": "yellow"})[0]["textColor"], "#000000")
         self.assertEqual(self.fetch([self.plain], {"cal": "black"})[0]["textColor"], "#ffffff")
 
-    def test_an_events_own_colour_still_wins(self):
-        coloured = dict(self.plain, colorId="11")
-        self.assertEqual(self.fetch([coloured], {"cal": "green"})[0]["backgroundColor"], "#FF0000")
+    def test_an_events_own_color_still_wins(self):
+        colored = dict(self.plain, colorId="11")
+        self.assertEqual(self.fetch([colored], {"cal": "green"})[0]["backgroundColor"], "#FF0000")
 
     def test_a_choice_only_affects_its_own_calendar(self):
         self.assertEqual(self.fetch([self.plain], {"other": "green"})[0]["backgroundColor"], "#FFFFFF")
@@ -492,7 +492,7 @@ class ChosenColourTests(AuthTestCase):
         self.assertFalse(self.fetch([self.plain], {"cal": "green"})[0]["dateRow"])
         self.assertFalse(self.fetch([self.plain], {})[0]["dateRow"])
 
-    def test_a_date_row_calendar_keeps_a_colour_for_layouts_without_the_row(self):
+    def test_a_date_row_calendar_keeps_a_color_for_layouts_without_the_row(self):
         self.assertEqual(self.fetch([self.plain], {"cal": calendar_api.DATE_ROW})[0]["backgroundColor"], "#FFFFFF")
 
 

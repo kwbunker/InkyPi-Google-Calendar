@@ -1,10 +1,10 @@
 # InkyPi Google Calendar
 
-An [InkyPi](https://github.com/fatihak/InkyPi) plugin that shows your Google Calendar on an e-ink display, keeping the colours you give individual events.
+An [InkyPi](https://github.com/fatihak/InkyPi) plugin that shows your Google Calendar on an e-ink display, keeping the colors you give individual events.
 
 ![The two-week view with sample events](example.png)
 
-InkyPi's built-in Calendar plugin reads iCal feeds, which don't carry per-event colours. This plugin uses the Google Calendar API so they come through. It maps Google's colours to the panel's inks, and adds no Python packages, which keeps it light on a Pi Zero 2 W.
+InkyPi's built-in Calendar plugin reads iCal feeds, which don't carry per-event colors. This plugin uses the Google Calendar API so they come through. It maps Google's colors to the panel's inks, and adds no Python packages, which keeps it light on a Pi Zero 2 W.
 
 **Status:** new and in active development, built for a Raspberry Pi Zero 2 W with a 13.3" Inky Impression. Other hardware is untested.
 
@@ -42,7 +42,7 @@ The plugin only asks for read-only access. Your credentials and sign-in token st
 - **Busy weeks:** in the two-week view, a busy week first takes spare room from the other week. If that isn't enough, event boxes shrink evenly, down to 60%. If they still don't fit, a day shows "+N more" rather than losing events silently.
 - **Dinner plans and the like:** choose **Under the date** for a calendar on the settings page, and in the two-week view its event titles become a plain row under each date instead of boxes. Other layouts show those events as normal.
 - **Failures:** if a scheduled refresh fails, the panel keeps your last calendar. A problem that needs you, like an expired sign-in or no calendars selected, adds a red warning across the bottom straight away. A passing one, like a Wi-Fi drop, only adds it after 3 hours, so brief outages don't disturb the display. **Update Now** shows errors in the web UI instead. If only some calendars fail, the "Updated" text says how many.
-- **Colours:** an event's own colour wins. Events with no colour use their calendar's panel colour, which the settings page suggests from the calendar's Google colour and lets you change. The page also lists which Google colours produce each panel colour. Orange isn't one of the 13.3" panel's inks, so it looks slightly grainy up close. The panel's inks are darker than InkyPi's web preview suggests. Raising **Inky Driver Saturation** darkens the preview's event colours, and 1.0 matches the panel, but above about 0.6 thin black lines and text start to speckle on the panel.
+- **Colors:** an event's own color wins. Events with no color use their calendar's panel color, which the settings page suggests from the calendar's Google color and lets you change. The page also lists which Google colors produce each panel color. Orange isn't one of the 13.3" panel's inks, so it looks slightly grainy up close. The panel's inks are darker than InkyPi's web preview suggests. Raising **Inky Driver Saturation** darkens the preview's event colors, and 1.0 matches the panel, but above about 0.6 thin black lines and text start to speckle on the panel.
 
 ## Troubleshooting
 

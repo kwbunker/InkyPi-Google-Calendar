@@ -39,28 +39,28 @@ class SettingsTemplateTests(unittest.TestCase):
         self.assertIn('name="authResponse"', html)
         self.assertIn("Use a different credentials file", html)
 
-    def test_each_calendar_shows_its_panel_colour(self):
+    def test_each_calendar_shows_its_panel_color(self):
         html = render(signed_in=True, has_client=True, available_calendars=[
             {"id": "a", "summary": "Meals", "backgroundColor": "#cabdbf", "panel": calendar_api.panel_color("white")},
             {"id": "b", "summary": "Home", "backgroundColor": "#ffad46", "panel": calendar_api.panel_color("orange")},
         ])
-        self.assertIn('background-color: #f0f0f0; color: #000000" title="Panel colour', html)
-        self.assertIn('background-color: #b68349; color: #000000" title="Panel colour', html)
+        self.assertIn('background-color: #f0f0f0; color: #000000" title="Panel color', html)
+        self.assertIn('background-color: #b68349; color: #000000" title="Panel color', html)
 
-    def test_colour_guide_lists_each_panel_colour_and_its_google_colours(self):
+    def test_color_guide_lists_each_panel_color_and_its_google_colors(self):
         html = render(signed_in=True, has_client=True)
         for name in ("Red", "Orange", "Yellow", "Green", "Blue", "White", "Black", "Tomato", "Tangerine", "Graphite"):
             self.assertIn(name, html)
         self.assertIn("looks grainy", html)
         self.assertLess(html.index(">Tomato") if ">Tomato" in html else html.index("Tomato"), html.index("Banana"))
 
-    def test_each_calendar_can_choose_a_panel_colour(self):
+    def test_each_calendar_can_choose_a_panel_color(self):
         html = render(signed_in=True, has_client=True, available_calendars=[
             {"id": "a@b", "summary": "<Meals>", "backgroundColor": "#cabdbf", "panel": calendar_api.panel_color("white")},
         ])
         self.assertIn('name="calendarColor:a@b"', html)
         self.assertIn(">Suggested (White)</option>", html)
-        self.assertIn('aria-label="Panel colour for &lt;Meals&gt;"', html)
+        self.assertIn('aria-label="Panel color for &lt;Meals&gt;"', html)
         for key in calendar_api.INKY_COLORS:
             self.assertIn(f'<option value="{key}"', html)
         self.assertTrue(f'name="{calendar_api.CALENDAR_COLOR_PREFIX}a@b"' in html)
@@ -73,7 +73,7 @@ class SettingsTemplateTests(unittest.TestCase):
         self.assertIn("Under the date (titles only)</option>", html)
         self.assertIn("only applies to the 2 Weeks layout", html)
 
-    def test_each_panel_colour_has_a_note_field(self):
+    def test_each_panel_color_has_a_note_field(self):
         html = render(signed_in=True, has_client=True)
         for key in calendar_api.INKY_COLORS:
             self.assertIn(f'name="colorNote:{key}"', html)
@@ -85,7 +85,7 @@ class SettingsTemplateTests(unittest.TestCase):
         self.assertIn("input.value = saved[input.name] || '';", html)
         self.assertIn('input[type="color"], .gcal-color-note', html)
 
-    def test_saved_colours_are_restored_on_the_page(self):
+    def test_saved_colors_are_restored_on_the_page(self):
         html = render(signed_in=True, has_client=True)
         self.assertIn("select.value = saved[select.name] || '';", html)
         self.assertIn("showChosenColor(select);", html)
@@ -103,8 +103,8 @@ class SettingsTemplateTests(unittest.TestCase):
         self.assertNotIn("This is a blank form", render())
         self.assertNotIn("This is a blank form", render(has_client=True, auth_url="https://example.com"))
 
-    def test_colour_guide_waits_until_signed_in(self):
-        self.assertNotIn("Panel colours:", render())
+    def test_color_guide_waits_until_signed_in(self):
+        self.assertNotIn("Panel colors:", render())
 
     def test_page_text_follows_the_dark_mode_theme(self):
         html = render(signed_in=True, has_client=True)

@@ -86,7 +86,7 @@ class PaletteTests(unittest.TestCase):
     def test_portrait_panel_counts_as_the_same_panel(self):
         self.assertEqual(self.palette(resolution=(1200, 1600)), plugin_module.ink_colors(0.5))
 
-    def test_other_panels_keep_pure_colours(self):
+    def test_other_panels_keep_pure_colors(self):
         self.assertEqual(self.palette(resolution=(800, 480)), plugin_module.INKY_COLORS)
         self.assertEqual(self.palette(display_type="epd7in3e"), plugin_module.INKY_COLORS)
 
@@ -326,7 +326,7 @@ class PluginFailureTests(unittest.TestCase):
             file.write("not json")
         self.assertTrue(self.refresh())
 
-    def test_chosen_calendar_colours_reach_the_fetch(self):
+    def test_chosen_calendar_colors_reach_the_fetch(self):
         settings = {"calendarIds[]": ["a@b"], "calendarColor:a@b": "green", "calendarColor:c@d": "bogus"}
         with patch.object(plugin_module, "fetch_events", return_value=([], 0)) as fetch, \
                 patch.object(self.plugin, "render_image", return_value=self.calendar_image):

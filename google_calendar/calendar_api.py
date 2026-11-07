@@ -1,4 +1,4 @@
-"""Google sign-in, Calendar API calls, and the date and colour logic.
+"""Google sign-in, Calendar API calls, and the date and color logic.
 
 Uses plain HTTP so the plugin adds no packages and stays light on a 512 MB Pi.
 Nothing here imports InkyPi, so it can be tested on its own.
@@ -34,7 +34,7 @@ INKY_COLORS = {
     "orange": "#FF8000",
 }
 
-# Roughly how each colour looks on the panel, for the settings page and ink_colors. These
+# Roughly how each color looks on the panel, for the settings page and ink_colors. These
 # come from the measured palette in Pimoroni's driver for this panel. Orange is an average of
 # its red and yellow, and white is lighter than measured so it still reads as white on a screen.
 PANEL_APPEARANCE = {
@@ -47,7 +47,7 @@ PANEL_APPEARANCE = {
     "orange": "#b68349",
 }
 
-# Google's fixed per-event colours (colorId), and the panel colour each one becomes.
+# Google's fixed per-event colors (colorId), and the panel color each one becomes.
 EVENT_COLORS = {
     "1": {"name": "Lavender", "hex": "#a4bdfc", "panel": "blue"},
     "2": {"name": "Sage", "hex": "#7ae7bf", "panel": "green"},
@@ -62,7 +62,7 @@ EVENT_COLORS = {
     "11": {"name": "Tomato", "hex": "#dc2127", "panel": "red"},
 }
 
-# Settings page fields holding the panel colour chosen for a calendar, followed by its ID.
+# Settings page fields holding the panel color chosen for a calendar, followed by its ID.
 CALENDAR_COLOR_PREFIX = "calendarColor:"
 
 # The choice in those fields for showing a calendar as titles under each date, not boxes.
@@ -291,7 +291,7 @@ class CalendarClient:
 
 
 def chosen_calendar_colors(settings):
-    """The panel colours, or DATE_ROW, chosen on the settings page, by calendar ID."""
+    """The panel colors, or DATE_ROW, chosen on the settings page, by calendar ID."""
     return {
         key[len(CALENDAR_COLOR_PREFIX):]: value
         for key, value in settings.items()
@@ -363,10 +363,10 @@ def warning_message(error):
 
 
 def color_guide():
-    """The panel's colours, each with the Google event colours that produce it."""
+    """The panel's colors, each with the Google event colors that produce it."""
     notes = {
         "orange": "The panel mixes this from red and yellow, so it looks grainy up close.",
-        "black": "No Google event colour becomes black, but you can choose it for a calendar above.",
+        "black": "No Google event color becomes black, but you can choose it for a calendar above.",
     }
     return [
         {
@@ -389,10 +389,10 @@ def panel_color(name):
 
 
 def ink_colors(saturation):
-    """Each colour as the driver's palette has it at this saturation, for drawing events.
+    """Each color as the driver's palette has it at this saturation, for drawing events.
 
-    The driver matches images against a blend of pure colours and the panel's measured inks.
-    Drawing with that same blend keeps every colour on solid ink, and brings InkyPi's web
+    The driver matches images against a blend of pure colors and the panel's measured inks.
+    Drawing with that same blend keeps every color on solid ink, and brings InkyPi's web
     preview closer to the panel. A saturation of 1 makes the preview match the measured inks.
     """
     saturation = float(saturation)
@@ -433,7 +433,7 @@ def _local_time_string(value, tz):
 
 
 def palette_name_for_hex(hex_color, fallback="blue"):
-    """Maps a calendar's colour to the panel by hue, so pale colours don't all become white."""
+    """Maps a calendar's color to the panel by hue, so pale colors don't all become white."""
     try:
         value = hex_color.lstrip("#")
         red, green, blue = (int(value[i:i + 2], 16) / 255 for i in (0, 2, 4))

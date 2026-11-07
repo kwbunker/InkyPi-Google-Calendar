@@ -52,8 +52,8 @@
       <span class="gcal-swatch" style="background-color: {{ calendar.backgroundColor }}"></span>
       <label for="calendar_{{ loop.index }}">{{ calendar.summary }}</label>
       <span class="gcal-arrow" aria-hidden="true">&rarr;</span>
-      <span class="gcal-chip" style="background-color: {{ calendar.panel.appearance }}; color: {{ calendar.panel.text }}" title="Panel colour for this calendar's events that have no colour of their own">{{ calendar.panel.name }}</span>
-      <select name="calendarColor:{{ calendar.id }}" class="form-input gcal-color-select" aria-label="Panel colour for {{ calendar.summary }}" onchange="showChosenColor(this)">
+      <span class="gcal-chip" style="background-color: {{ calendar.panel.appearance }}; color: {{ calendar.panel.text }}" title="Panel color for this calendar's events that have no color of their own">{{ calendar.panel.name }}</span>
+      <select name="calendarColor:{{ calendar.id }}" class="form-input gcal-color-select" aria-label="Panel color for {{ calendar.summary }}" onchange="showChosenColor(this)">
         <option value="" data-name="{{ calendar.panel.name }}" data-appearance="{{ calendar.panel.appearance }}" data-text="{{ calendar.panel.text }}">Suggested ({{ calendar.panel.name }})</option>
         {% for color in color_guide %}
           <option value="{{ color.key }}" data-name="{{ color.name }}" data-appearance="{{ color.appearance }}" data-text="{{ color.text }}">{{ color.name }}</option>
@@ -63,12 +63,12 @@
     </div>
   {% endfor %}
   <div class="gcal-message" id="gcalNoneSelected" style="display: none;">Select at least one calendar, or this instance can't update the display.</div>
-  <small class="gcal-note">Beside each calendar is the panel colour its events get if they have no colour of their own. Changing it here only affects the panel, not your Google Calendar. <em>Under the date</em> shows a calendar's event titles in a row under each date instead of boxes, which suits something like a dinner plan. It only applies to the 2 Weeks layout, and other layouts show those events as normal.</small>
+  <small class="gcal-note">Beside each calendar is the panel color its events get if they have no color of their own. Changing it here only affects the panel, not your Google Calendar. <em>Under the date</em> shows a calendar's event titles in a row under each date instead of boxes, which suits something like a dinner plan. It only applies to the 2 Weeks layout, and other layouts show those events as normal.</small>
 </div>
 
 <div class="form-group gcal-stack">
-  <label class="form-label">Panel colours:</label>
-  <small class="gcal-note">To get a colour on the panel, give the event one of these colours in Google Calendar. An event's own colour always wins over its calendar's. The labels here roughly match how each colour looks on the panel. Notes are reminders for you, such as who each colour is for. They're saved with this entry and don't appear on the panel.</small>
+  <label class="form-label">Panel colors:</label>
+  <small class="gcal-note">To get a color on the panel, give the event one of these colors in Google Calendar. An event's own color always wins over its calendar's. The labels here roughly match how each color looks on the panel. Notes are reminders for you, such as who each color is for. They're saved with this entry and don't appear on the panel.</small>
   {% for color in color_guide %}
     <div class="gcal-guide-row">
       <span class="gcal-chip" style="background-color: {{ color.appearance }}; color: {{ color.text }}">{{ color.name }}</span>
